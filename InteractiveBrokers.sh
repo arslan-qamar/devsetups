@@ -2,18 +2,32 @@
 set -euo pipefail
 
 # Update package list
-sudo apt update -y
+sudo apt update 
 
 # Install Git 
-sudo apt install -y git
+sudo apt install git
 
 # Install Github cli (for cloning repos)
-sudo apt install -y gh
+sudo apt install gh
 
 # Install curl (required to fetch Devbox install script)
-sudo apt install -y curl
+sudo apt install curl
 
 # Install Devbox
 sudo curl -fsSL https://get.jetpack.io/devbox | bash -s -- --force
 
+# Install VsCode
+sudo snap install code
 
+# Login Github
+gh auth login
+
+# Clone your target repository
+sudo rm -rf interactivebrokers2
+gh repo clone https://github.com/arslan-qamar/interactivebrokers2.git
+
+cd interactivebrokers2
+devbox init || true   # don't fail if it already has devbox.json
+
+# Confirm devbox installed
+devbox --version
