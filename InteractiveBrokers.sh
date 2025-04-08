@@ -50,4 +50,4 @@ gh repo clone https://github.com/arslan-qamar/interactivebrokers2.git
 cd ~/interactivebrokers2
 devbox init || true
 exec devbox shell
-echo "cd ~/interactivebrokers2"
+code ~/interactivebrokers2 &
