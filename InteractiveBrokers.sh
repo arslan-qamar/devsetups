@@ -17,7 +17,7 @@ sudo apt install -y curl
 curl -fsSL https://get.jetpack.io/devbox | bash -s -- --force
 
 # Install VsCode
-sudo snap install -y code
+sudo snap install code
 
 # Login Github
 gh auth login
