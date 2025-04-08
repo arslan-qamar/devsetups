@@ -39,6 +39,4 @@ gh repo clone https://github.com/arslan-qamar/interactivebrokers2.git
 cd interactivebrokers2
 devbox init || true   # don't fail if it already has devbox.json
 
-# Confirm devbox installed
-devbox --version
 
