@@ -16,13 +16,8 @@ sudo apt install -y curl
 # Install Devbox
 curl -fsSL https://get.jetpack.io/devbox | bash
 
-# Source Devbox into current shell session
-source ~/.devbox/nix/profile.sh
+snap install code
 
-# Optionally, persist to .bashrc for future shells
-echo 'source ~/.devbox/nix/profile.sh' >> ~/.bashrc
-
-# (Optional) cd into project and initialize Devbox
 cd interactivebrokers2
 devbox init || true   # don't fail if it already has devbox.json
 
