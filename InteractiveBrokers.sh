@@ -5,7 +5,7 @@ cd ~
 
 # Install dependencies
 sudo apt update 
-sudo apt install wget gpg
+sudo apt install gpg
 
 # Install Git 
 sudo apt install git
