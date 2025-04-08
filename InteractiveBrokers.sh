@@ -32,7 +32,13 @@ sudo apt update
 sudo apt install code
 
 # Login Github
-gh auth login
+if ! gh auth status &>/dev/null; then
+  echo "GitHub CLI not authenticated. Logging in..."
+  gh auth login
+else
+  echo "GitHub CLI already authenticated."
+fi
+
 
 # Set Github Creds as default
 git config --global credential.helper '!gh auth git-credential'
