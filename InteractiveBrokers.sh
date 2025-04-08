@@ -8,6 +8,7 @@ sudo apt update
 sudo apt install -y git
 
 # Clone your target repository
+rm -rf interactivebrokers2
 git clone https://github.com/arslan-qamar/interactivebrokers2.git
 
 # Install curl (required to fetch Devbox install script)
