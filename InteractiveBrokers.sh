@@ -14,7 +14,7 @@ sudo apt install -y gh
 sudo apt install -y curl
 
 # Install Devbox
-curl -fsSL https://get.jetpack.io/devbox | bash -s -- --force
+sudo curl -fsSL https://get.jetpack.io/devbox | bash -s -- --force
 
 # Install VsCode
 sudo snap install code
