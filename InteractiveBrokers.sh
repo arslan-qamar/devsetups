@@ -4,11 +4,8 @@ set -exuo pipefail
 cd ~
 
 # Install dependencies
-# sudo apt update 
+sudo apt update 
 
-
-# Install Git 
-sudo apt install git
 
 # Install Github cli (for cloning repos)
 sudo apt install gh
@@ -38,6 +35,8 @@ else
   echo "GitHub CLI already authenticated."
 fi
 
+# Install Git 
+sudo apt install git
 
 # Set Github Creds as default
 git config --global credential.helper '!gh auth git-credential'
