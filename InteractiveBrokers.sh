@@ -5,9 +5,7 @@ cd ~
 
 # Install dependencies
 sudo apt update 
-sudo apt install gpg
 
-source ~/.bashrc
 
 # Install Git 
 sudo apt install git
@@ -28,7 +26,7 @@ sudo echo "deb [arch=amd64,arm64,armhf signed-by=/etc/apt/keyrings/packages.micr
 sudo rm -f packages.microsoft.gpg
 
 # Add the VS Code repo
-sudo apt install apt-transport-https
+sudo apt install gpg apt-transport-https
 sudo apt update
 sudo apt install code
 
