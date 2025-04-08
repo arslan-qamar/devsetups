@@ -7,6 +7,8 @@ cd ~
 sudo apt update 
 sudo apt install gpg
 
+source ~/.bashrc
+
 # Install Git 
 sudo apt install git
 
