@@ -23,7 +23,8 @@ sudo echo "deb [arch=amd64,arm64,armhf signed-by=/etc/apt/keyrings/packages.micr
 sudo rm -f packages.microsoft.gpg
 
 # Add the VS Code repo
-sudo apt install gpg apt-transport-https
+sudo apt install gpg 
+sudo apt install apt-transport-https
 sudo apt install code
 
 # Login Github
