@@ -41,7 +41,7 @@ git config --global credential.helper '!gh auth git-credential'
 sudo rm -rf interactivebrokers2
 gh repo clone https://github.com/arslan-qamar/interactivebrokers2.git
 
-cd interactivebrokers2
+cd ~/interactivebrokers2
 devbox init || true   # don't fail if it already has devbox.json
 
 
