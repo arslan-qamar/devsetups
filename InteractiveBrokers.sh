@@ -4,7 +4,7 @@ set -exuo pipefail
 cd ~
 
 # Install dependencies
-sudo apt update 
+# sudo apt update 
 
 
 # Install Git 
