@@ -34,9 +34,14 @@ sudo apt install code
 # Login Github
 gh auth login
 
+# Set Github Creds as default
+git config --global credential.helper '!gh auth git-credential'
+
 # Clone your target repository
 sudo rm -rf interactivebrokers2
 gh repo clone https://github.com/arslan-qamar/interactivebrokers2.git
 
 cd interactivebrokers2
 devbox init || true   # don't fail if it already has devbox.json
+
+
