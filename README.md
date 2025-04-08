@@ -1,2 +1,2 @@
-# devsetups
+# Dev Setups
 Repository to shell scripts to setup dev environments for relevant Git Repos
