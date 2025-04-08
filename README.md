@@ -3,4 +3,4 @@ Repository to shell scripts to setup dev environments for relevant Git Repos
 
 
 ## Interactive Brokers 
-`curl -L -H "Cache-Control: no-cache" -fsSL "https://raw.githubusercontent.com/arslan-qamar/devsetups/refs/heads/main/InteractiveBrokers.sh?ts=$(date +%s)" | bash`
+`wget --header="Cache-Control: no-cache" -qO- "https://raw.githubusercontent.com/arslan-qamar/devsetups/refs/heads/main/InteractiveBrokers.sh?ts=$(date +%s)" | bash`
