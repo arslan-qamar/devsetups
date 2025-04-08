@@ -47,6 +47,9 @@ sudo rm -rf interactivebrokers2
 gh repo clone https://github.com/arslan-qamar/interactivebrokers2.git
 
 cd ~/interactivebrokers2
+
 devbox init || true
+
 exec devbox shell
+
 code ~/interactivebrokers2 &
