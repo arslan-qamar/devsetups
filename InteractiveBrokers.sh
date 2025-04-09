@@ -31,7 +31,7 @@ sudo apt install apt-transport-https
 
 
 # Install Git 
-sudo apt install git
+sudo apt install -y git
 
 # Login Github
 if ! gh auth status &>/dev/null; then
