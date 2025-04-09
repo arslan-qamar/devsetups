@@ -36,6 +36,6 @@ INVENTORY="${2:-localhost,}"
 CONNECTION="${3:-local}"
 
 echo "[+] Running Ansible playbook..."
-ansible-playbook -v "$PLAYBOOK_FILE" -i "$INVENTORY" --connection="$CONNECTION"
+ansible-playbook -vvv "$PLAYBOOK_FILE" -i "$INVENTORY" --connection="$CONNECTION"
 
 echo "[✓] Done."
