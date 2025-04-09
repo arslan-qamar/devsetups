@@ -1,96 +1,43 @@
 ---
 - name: Setup Dev Environment
   hosts: localhost
-  connection: local
-  become: true
-
-  vars:
-    vscode_repo: "deb [arch=amd64,arm64,armhf signed-by=/etc/apt/keyrings/packages.microsoft.gpg] https://packages.microsoft.com/repos/code stable main"
-    repo_name: "interactivebrokers2"
-    repo_url: "https://github.com/arslan-qamar/interactivebrokers2.git"
-    devbox_install_url: "https://get.jetpack.io/devbox"
+  become: yes
 
   tasks:
-    - name: Ensure required APT packages are installed
+    - name: Update APT package index
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Install essential packages
       apt:
         name:
-          - git
-          - gh
           - curl
-          - gpg
-          - apt-transport-https
+          - git
         state: present
-        update_cache: true
+
+    - name: Install GitHub CLI (gh)
+      apt:
+        deb: https://github.com/cli/cli/releases/download/v2.49.0/gh_2.49.0_linux_amd64.deb
 
     - name: Install Devbox
       shell: |
-        curl -fsSL {{ devbox_install_url }} | bash -s -- --force
+        curl -fsSL https://get.jetpack.io/devbox | bash
       args:
-        executable: /bin/bash
-      environment:
-        HOME: "{{ ansible_env.HOME }}"
-      register: devbox_install
-      changed_when: "'Installing Devbox' in devbox_install.stdout"
+        creates: /usr/local/bin/devbox
 
-    - name: Import Microsoft GPG key
-      shell: |
-        wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor | tee /etc/apt/keyrings/packages.microsoft.gpg > /dev/null
-      args:
-        creates: /etc/apt/keyrings/packages.microsoft.gpg
+    - name: Add Microsoft GPG key
+      apt_key:
+        url: https://packages.microsoft.com/keys/microsoft.asc
+        state: present
 
     - name: Add VS Code repository
       apt_repository:
-        repo: "{{ vscode_repo }}"
-        filename: vscode
+        repo: "deb [arch=amd64] https://packages.microsoft.com/repos/vscode stable main"
         state: present
+        filename: vscode
 
     - name: Install Visual Studio Code
       apt:
         name: code
         state: present
-        update_cache: true
-
-    - name: Check if GitHub CLI is authenticated
-      shell: gh auth status
-      register: gh_auth
-      failed_when: false
-      changed_when: false
-
-    - name: Authenticate GitHub CLI if not already authenticated
-      shell: gh auth login
-      when: "'You are not logged into any GitHub hosts' in gh_auth.stderr"
-
-    - name: Set GitHub CLI as Git credential helper
-      git_config:
-        name: credential.helper
-        value: "!gh auth git-credential"
-        scope: global
-
-    - name: Remove existing repo folder if exists
-      file:
-        path: "{{ ansible_env.HOME }}/{{ repo_name }}"
-        state: absent
-
-    - name: Clone the GitHub repository
-      become: false
-      shell: gh repo clone {{ repo_url }}
-      args:
-        chdir: "{{ ansible_env.HOME }}"
-      environment:
-        HOME: "{{ ansible_env.HOME }}"
-
-    - name: Initialize Devbox (ignore error if already initialized)
-      become: false
-      shell: devbox init || true
-      args:
-        chdir: "{{ ansible_env.HOME }}/{{ repo_name }}"
-      environment:
-        HOME: "{{ ansible_env.HOME }}"
-
-    - name: Launch Devbox shell (interactive - skipped)
-      debug:
-        msg: "Run 'cd ~/{{ repo_name }} && exec devbox shell' manually in an interactive shell."
-
-    - name: Launch VS Code (optional - skipped)
-      debug:
-        msg: "VS Code can be launched manually: code ~/{{ repo_name }}"
