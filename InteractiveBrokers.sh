@@ -3,7 +3,9 @@ set -exuo pipefail
 
 cd ~
 
+
 # Install dependencies
+sudo apt-get remove -y --purge man-db
 sudo apt update 
 
 
@@ -29,7 +31,6 @@ sudo apt install apt-transport-https
 
 
 # Install Git 
-sudo apt-get remove -y --purge man-db
 sudo apt install git
 
 # Login Github
