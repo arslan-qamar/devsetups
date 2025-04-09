@@ -27,6 +27,11 @@ sudo apt install gpg
 sudo apt install apt-transport-https
 
 
+
+# Install Git 
+sudo apt-get remove --purge man-db
+sudo apt install git
+
 # Login Github
 if ! gh auth status &>/dev/null; then
   echo "GitHub CLI not authenticated. Logging in..."
@@ -34,10 +39,6 @@ if ! gh auth status &>/dev/null; then
 else
   echo "GitHub CLI already authenticated."
 fi
-
-# Install Git 
-sudo apt-get remove --purge man-db
-sudo apt install git
 
 # Set Github Creds as default
 git config --global credential.helper '!gh auth git-credential'
