@@ -7,8 +7,7 @@ cd ~
 sudo apt update 
 
 # Install Git 
-sudo apt install -y git
-
+sudo apt install git
 
 # Install Github cli (for cloning repos)
 sudo apt install gh
@@ -29,7 +28,9 @@ sudo rm -f packages.microsoft.gpg
 sudo apt install gpg 
 sudo apt install apt-transport-https
 
-
+# Install Code
+sudo apt update 
+sudo apt install code
 
 # Login Github
 if ! gh auth status &>/dev/null; then
@@ -52,7 +53,4 @@ devbox init || true
 
 exec devbox shell
 
-# Install Code and Open 
-sudo apt update 
-sudo apt install code
 code ~/interactivebrokers2 &
