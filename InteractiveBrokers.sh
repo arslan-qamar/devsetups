@@ -36,8 +36,7 @@ else
 fi
 
 # Install Git 
-sudo debconf-set man-db/auto-update false
-sudo rm /var/lib/man-db/auto-update
+sudo apt-get remove --purge man-db
 sudo apt install git
 
 # Set Github Creds as default
