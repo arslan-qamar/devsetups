@@ -18,8 +18,8 @@ else
 fi
 
 # Step 2: Download the public playbook
-PLAYBOOK_URL="https://example.com/setup-tools.yml"
-PLAYBOOK_FILE="setup-tools.yml"
+PLAYBOOK_URL="https://raw.githubusercontent.com/arslan-qamar/devsetups/refs/heads/main/interactivebrokers.yaml"
+PLAYBOOK_FILE="interactivebrokers.yaml"
 
 echo "[+] Downloading playbook from $PLAYBOOK_URL..."
 curl -fsSL "$PLAYBOOK_URL" -o "$PLAYBOOK_FILE"
