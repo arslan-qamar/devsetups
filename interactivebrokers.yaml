@@ -22,7 +22,7 @@
 
     - name: Install Devbox via official script
       shell: |
-        curl -fsSL https://get.jetify.com/devbox | bash
+        curl -fsSL https://get.jetpack.io/devbox | bash -s -- --force
       args:
         executable: /bin/bash
         creates: /usr/local/bin/devbox
