@@ -3,10 +3,11 @@ set -exuo pipefail
 
 cd ~
 
-
 # Install dependencies
-sudo apt-get remove -y --purge man-db
 sudo apt update 
+
+# Install Git 
+sudo apt install -y git
 
 
 # Install Github cli (for cloning repos)
@@ -29,9 +30,6 @@ sudo apt install gpg
 sudo apt install apt-transport-https
 
 
-
-# Install Git 
-sudo apt install -y git
 
 # Login Github
 if ! gh auth status &>/dev/null; then
