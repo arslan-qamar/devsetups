@@ -3,7 +3,7 @@
   hosts: localhost
   become: yes
   vars:
-   state: present  # Can be overridden with --extra-vars state=absent
+    state: present # Can be overridden with --extra-vars state=absent
 
   tasks:
     - name: Update APT package index
@@ -35,7 +35,7 @@
         path: /usr/local/bin/devbox
         state: "{{ state }}"
       when: state == "absent"
-  
+
     - name: Manage Devbox bash completion
       file:
         path: /etc/bash_completion.d/devbox
