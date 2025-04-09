@@ -25,7 +25,7 @@ sudo rm -f packages.microsoft.gpg
 # Add the VS Code repo
 sudo apt install gpg 
 sudo apt install apt-transport-https
-sudo apt install code
+
 
 # Login Github
 if ! gh auth status &>/dev/null; then
@@ -51,4 +51,7 @@ devbox init || true
 
 exec devbox shell
 
+# Install Code and Open 
+sudo apt update 
+sudo apt install code
 code ~/interactivebrokers2 &
