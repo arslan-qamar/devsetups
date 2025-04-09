@@ -1,6 +1,8 @@
 #!/bin/bash
 
-set -e
+set -exuo pipefail
+
+cd ~
 
 # Step 1: Update system and install Ansible
 echo "[+] Installing Ansible..."
