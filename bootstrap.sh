@@ -34,8 +34,9 @@ curl -fsSL "$PLAYBOOK_URL" -o "$PLAYBOOK_FILE"
 # Step 3: Run the Ansible playbook (Allow specifying inventory file and connection method)
 INVENTORY="${2:-localhost,}"
 CONNECTION="${3:-local}"
+STATE="${4:-present}"
 
 echo "[+] Running Ansible playbook..."
-ansible-playbook -vvv "$PLAYBOOK_FILE" -i "$INVENTORY" --connection="$CONNECTION"
+ansible-playbook -vvv "$PLAYBOOK_FILE" -i "$INVENTORY" --connection="$CONNECTION" --extra-vars "state=$STATE"
 
 echo "[✓] Done."
