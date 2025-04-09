@@ -2,6 +2,8 @@
 - name: Setup Dev Environment
   hosts: localhost
   become: yes
+  vars:
+   state: present  # Can be overridden with --extra-vars state=absent
 
   tasks:
     - name: Update APT package index
@@ -14,7 +16,7 @@
         name:
           - curl
           - git
-        state: present
+        state: "{{ state }}"
 
     - name: Install GitHub CLI (gh)
       apt:
@@ -26,19 +28,38 @@
       args:
         executable: /bin/bash
         creates: /usr/local/bin/devbox
+      when: state == "present"
+
+    - name: Install or Uninstall Devbox binary
+        file:
+          path: /usr/local/bin/devbox
+          state: "{{ state }}"
+        when: state == "absent"
+  
+      - name: Manage Devbox bash completion
+        file:
+          path: /etc/bash_completion.d/devbox
+          state: "{{ state }}"
+        when: state == "absent"
+  
+      - name: Manage Devbox user config
+        file:
+          path: "{{ ansible_env.HOME }}/.devbox"
+          state: "{{ state }}"
+        when: state == "absent"
 
     - name: Add Microsoft GPG key
       apt_key:
         url: https://packages.microsoft.com/keys/microsoft.asc
-        state: present
+        state: "{{ state }}"
 
     - name: Add VS Code repository
       apt_repository:
         repo: "deb [arch=amd64] https://packages.microsoft.com/repos/vscode stable main"
-        state: present
+        state: "{{ state }}"
         filename: vscode
 
     - name: Install Visual Studio Code
       apt:
         name: code
-        state: present
+        state: "{{ state }}"
