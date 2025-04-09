@@ -20,12 +20,12 @@
       apt:
         deb: https://github.com/cli/cli/releases/download/v2.49.0/gh_2.49.0_linux_amd64.deb
 
-    - name: Install devbox (if available via apt)
-      apt:
-        name: devbox
-        state: present
-      environment:
-        DEBIAN_FRONTEND: noninteractive
+    - name: Install Devbox via official script
+      shell: |
+        curl -fsSL https://get.jetify.com/devbox | bash
+      args:
+        executable: /bin/bash
+        creates: /usr/local/bin/devbox
 
     - name: Add Microsoft GPG key
       apt_key:
