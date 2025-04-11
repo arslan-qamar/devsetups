@@ -23,7 +23,7 @@ else
 fi
 
 # Step 2: Download the public playbook (Make the URL configurable)
-PLAYBOOK_URL="${1:-https://raw.githubusercontent.com/arslan-qamar/devsetups/refs/heads/main/interactivebrokers.yaml}"
+PLAYBOOK_URL="${1:-https://raw.githubusercontent.com/arslan-qamar/devsetups/refs/heads/main/Host/install_virtualbox_vagrant.yml}"
 
 # Extract the filename from the URL
 PLAYBOOK_FILE=$(basename "$PLAYBOOK_URL")
