@@ -1,0 +1,13 @@
+---
+- name: Ensure apt cache is updated
+  apt:
+    update_cache: yes
+    cache_valid_time: 3600
+
+- name: Install base dependencies
+  apt:
+    name:
+      - curl
+      - gnupg2
+      - software-properties-common
+    state: present
