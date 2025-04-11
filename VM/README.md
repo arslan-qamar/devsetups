@@ -1,1 +1,1 @@
-The bootstrap.sh file is a script that can be run on VM startup to setup the tools and customise the VM using relevant Ansible script in other folders.
+The bootstrap.sh file can be used to setup Host / VM to setup the tools using relevant Ansible scripts from any location / other project setup folders in this repo.
