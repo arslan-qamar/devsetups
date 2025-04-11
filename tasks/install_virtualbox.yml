@@ -1,0 +1,17 @@
+---
+- name: Add VirtualBox apt repository key
+  apt_key:
+    url: https://www.virtualbox.org/download/oracle_vbox_2016.asc
+    state: present
+
+- name: Add VirtualBox repository
+  apt_repository:
+    repo: 'deb [arch=amd64] https://download.virtualbox.org/virtualbox/debian jammy contrib'
+    state: present
+    filename: virtualbox
+
+- name: Install VirtualBox
+  apt:
+    name: virtualbox-7.0
+    state: present
+    update_cache: yes
