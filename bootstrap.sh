@@ -1,5 +1,7 @@
 #!/bin/bash
 
+#This can be run on Host / VM to setup the tools and customise using relevant Ansible script in other folders.
+
 set -exuo pipefail
 
 cd ~
