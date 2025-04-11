@@ -1,0 +1,22 @@
+---
+- name: Install Deps and Tools
+  hosts: hosts: "{{ target_hosts | default('localhost') }}"
+  become: true
+
+  tasks:
+  
+    - name: Show which host this is running on
+      debug:
+        msg: "Running on {{ inventory_hostname }}"
+        
+    - name: Include dependencies
+      include_tasks: tasks/install_deps.yml
+      tags: deps
+
+    - name: Include VirtualBox installation
+      include_tasks: tasks/install_virtualbox.yml
+      tags: virtualbox
+
+    - name: Include Vagrant installation
+      include_tasks: tasks/install_vagrant.yml
+      tags: vagrant
