@@ -4,40 +4,30 @@
   become: true
 
   tasks:
-  
     - name: Show which host this is running on
       debug:
         msg: "Running on {{ inventory_hostname }}"
-        
+
     - name: Include dependencies
-      include_tasks: tasks/install_deps.yml
-      tags: deps
-    
+      include_tasks:
+      file: tasks/install_deps.yml
+      apply:
+        tags: deps
+
     - name: Include Devbox installation
-      include_tasks: tasks/install_devbox.yml
-      tags: devbox
+      include_tasks:
+      file: tasks/install_devbox.yml
+      apply:
+        tags: devbox
 
     - name: Include Git Hub CLI installation
-      include_tasks: tasks/install_github_cli.yml
-      tags: githubcli
+      include_tasks:
+      file: tasks/install_github_cli.yml
+      apply:
+        tags: githubcli
 
     - name: Include VSCode installation
-      include_tasks: tasks/install_vscode.yml
-      tags: vscode
-
-    # - name: Include Vagrant installation
-    #   include_tasks: tasks/install_vagrant.yml
-    #   tags: vagrant
-
-    # - name: Include VirtualBox installation
-    #   include_tasks: tasks/install_virtualbox.yml
-    #   tags: virtualbox
-
-    # - name: Include Docker installation
-    #   include_tasks: tasks/install_docker.yml
-    #   tags: docker
-
-    
-    
-
-
+      include_tasks:
+      file: tasks/install_vscode.yml
+      apply:
+        tags: vscode
