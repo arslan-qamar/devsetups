@@ -25,7 +25,7 @@ else
 fi
 
 # Step 2: Download the public playbook (Make the URL configurable)
-PLAYBOOK_URL="${1:-https://raw.githubusercontent.com/arslan-qamar/devsetups/refs/heads/main/Host/install_virtualbox_vagrant.yml}"
+PLAYBOOK_URL="${1:-https://raw.githubusercontent.com/arslan-qamar/devsetups/refs/heads/main/main.yml}"
 
 # Extract the filename from the URL
 PLAYBOOK_FILE=$(basename "$PLAYBOOK_URL")
@@ -36,9 +36,10 @@ curl -fsSL "$PLAYBOOK_URL" -o "$PLAYBOOK_FILE"
 # Step 3: Run the Ansible playbook (Allow specifying inventory file and connection method)
 INVENTORY="${2:-localhost,}"
 CONNECTION="${3:-local}"
-STATE="${4:-present}"
+STATE=$(case "$4" in install) echo "present";; uninstall) echo "absent";; *) echo "present";; esac)
+TAGS="${5:-}"
 
 echo "[+] Running Ansible playbook..."
-ansible-playbook -vvv "$PLAYBOOK_FILE" -i "$INVENTORY" --connection="$CONNECTION" --extra-vars "state=$STATE"
+ansible-playbook -vvv "$PLAYBOOK_FILE" -i "$INVENTORY" --connection="$CONNECTION" --extra-vars "state=$STATE" ${TAGS:+--tags "$TAGS"}
 
 echo "[✓] Done."

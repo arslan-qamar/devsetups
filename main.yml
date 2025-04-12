@@ -1,6 +1,6 @@
 ---
 - name: Install Deps and Tools
-  hosts: hosts: "{{ target_hosts | default('localhost') }}"
+  hosts: "{{ target_hosts | default('localhost') }}"
   become: true
 
   tasks:
@@ -13,10 +13,31 @@
       include_tasks: tasks/install_deps.yml
       tags: deps
 
-    - name: Include VirtualBox installation
-      include_tasks: tasks/install_virtualbox.yml
-      tags: virtualbox
+    - name: Include Devbox installation
+      include_tasks: tasks/install_devbox.yml
+      tags: devbox
+
+    - name: Include Git Hub CLI installation
+      include_tasks: tasks/install_gh.yml
+      tags: githubcli
+
+    - name: Include VSCode installation
+      include_tasks: tasks/install_vscode.yml
+      tags: vscode
 
     - name: Include Vagrant installation
       include_tasks: tasks/install_vagrant.yml
       tags: vagrant
+
+    - name: Include VirtualBox installation
+      include_tasks: tasks/install_virtualbox.yml
+      tags: virtualbox
+
+    - name: Include Docker installation
+      include_tasks: tasks/install_docker.yml
+      tags: docker
+
+    
+    
+
+

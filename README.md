@@ -6,4 +6,3 @@ Repository to setup dev environments using Vagrant (Provisioning) and Ansible (C
 - Setup local VirtualBox setup
 - Install Vagrant
 
-
