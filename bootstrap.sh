@@ -34,6 +34,7 @@ echo "State target set to : " $STATE
 TAGS="${5:-}"
 
 echo "[+] Running Ansible playbook..."
-ansible-playbook -vvv "$PLAYBOOK_FILE" -i "$INVENTORY" --connection="$CONNECTION" --extra-vars "state=$STATE" ${TAGS:+--tags "$TAGS"}
+echo `ansible-playbook -vvv "$PLAYBOOK_FILE" -i "$INVENTORY" --connection="$CONNECTION" --extra-vars "state=$STATE" ${TAGS:+--tags "$TAGS"}`
+ansible-playbook -vvv "$PLAYBOOK_FILE" -i "$INVENTORY" --connection="$CONNECTION" --extra-vars `state=$STATE ${TAGS:+--tags "$TAGS"}`
 
 echo "[✓] Done."

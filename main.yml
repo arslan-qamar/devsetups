@@ -10,9 +10,9 @@
         msg: "Running on {{ inventory_hostname }}"
         
     - name: Include dependencies
-      include_tasks: ./tasks/install_deps.yml
+      include_tasks: tasks/install_deps.yml
       tags: deps
-
+    
     - name: Include Devbox installation
       include_tasks: tasks/install_devbox.yml
       tags: devbox
