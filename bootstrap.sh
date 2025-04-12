@@ -23,10 +23,19 @@ else
 fi
 
 # Checkout the git repo if not already done
-git clone https://github.com/arslan-qamar/devsetups.git
+REPO_URL="https://github.com/arslan-qamar/devsetups.git"
+TARGET_DIR="devsetups"
 
-# Change to the devsetups directory
-cd devsetups
+if test -d $TARGET_DIR; then
+    echo "Cloning repository..."
+    git clone "$REPO_URL" "$TARGET_DIR"    
+else
+    echo "Repository already exists. Pulling latest changes..."       
+    git pull
+fi
+
+# Change to the repo directory
+cd "$TARGET_DIR"    
 
 # Run the Playbook file 
 PLAYBOOK_FILE="${1:-main.yml}"
