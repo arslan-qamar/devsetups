@@ -1,10 +1,19 @@
 ---
 - name: Install Devbox via official script
   shell: |
-    curl -fsSL https://get.jetpack.io/devbox | bash -s -- --force
+    curl -fsSL https://get.jetify.com/devbox | bash -s -- --force
   args:
     executable: /bin/bash
     creates: /usr/local/bin/devbox
+  when: state == "present"
+
+- name: Make Devbox executable by everyone
+  file:
+    path: /usr/local/bin/devbox
+    mode: '0755'
+    owner: root
+    group: root
+    state: file
   when: state == "present"
 
 - name: Install or Uninstall Devbox binary
