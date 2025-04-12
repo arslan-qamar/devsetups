@@ -24,21 +24,15 @@ else
   exit 1
 fi
 
-# Checkout the git repo if not already done
+# Checkout fresh git repo 
 REPO_URL="https://github.com/arslan-qamar/devsetups.git"
 TARGET_DIR="devsetups"
 
-if [ ! -d "$TARGET_DIR" ]; then    
-    echo "Cloning repository..."    
-    git clone "$REPO_URL" "$TARGET_DIR"    
-    cd "$TARGET_DIR"  
-else
-    echo "Repository already exists. Pulling latest changes..."           
-    cd "$TARGET_DIR"
-    git stash  
-    git pull        
-    git stash pop
-fi
+ # Remove existing directory if it exists
+rm -rf "$TARGET_DIR"
+echo "Cloning repository..."    
+git clone "$REPO_URL" "$TARGET_DIR"    
+cd "$TARGET_DIR"  
 
 # Run the Playbook file 
 PLAYBOOK_FILE="${1:-main.yml}"
