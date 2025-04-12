@@ -4,8 +4,6 @@
 
 set -exuo pipefail
 
-cd ~
-
 # Step 1: Update system and install dependencies (Ansible and curl)
 echo "[+] Installing dependencies..."
 if [ -x "$(command -v apt)" ]; then
@@ -24,19 +22,14 @@ else
   exit 1
 fi
 
-# Step 2: Download the public playbook (Make the URL configurable)
-PLAYBOOK_URL="${1:-https://raw.githubusercontent.com/arslan-qamar/devsetups/refs/heads/main/main.yml}"
+# Step 2: Playbook file 
+PLAYBOOK_FILE="${1:-main.yml}"
 
-# Extract the filename from the URL
-PLAYBOOK_FILE=$(basename "$PLAYBOOK_URL")
-
-echo "[+] Downloading playbook from $PLAYBOOK_URL..."
-curl -fsSL "$PLAYBOOK_URL" -o "$PLAYBOOK_FILE"
 
 # Step 3: Run the Ansible playbook (Allow specifying inventory file and connection method)
 INVENTORY="${2:-localhost,}"
 CONNECTION="${3:-local}"
-STATE=$(case "$4" in install) echo "present";; uninstall) echo "absent";; *) echo "present";; esac)
+STATE=$(case "${4:-install}" in install) echo "present";; uninstall) echo "absent";; *) echo "present";; esac)
 TAGS="${5:-}"
 
 echo "[+] Running Ansible playbook..."

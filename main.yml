@@ -10,7 +10,7 @@
         msg: "Running on {{ inventory_hostname }}"
         
     - name: Include dependencies
-      include_tasks: tasks/install_deps.yml
+      include_tasks: ./tasks/install_deps.yml
       tags: deps
 
     - name: Include Devbox installation
@@ -18,7 +18,7 @@
       tags: devbox
 
     - name: Include Git Hub CLI installation
-      include_tasks: tasks/install_gh.yml
+      include_tasks: tasks/install_github_cli.yml
       tags: githubcli
 
     - name: Include VSCode installation
