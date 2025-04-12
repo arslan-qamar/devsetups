@@ -4,6 +4,8 @@
 
 set -exuo pipefail
 
+cd ~
+
 # Step 1: Update system and install dependencies (Ansible and curl)
 echo "[+] Installing dependencies..."
 if [ -x "$(command -v apt)" ]; then
@@ -26,16 +28,17 @@ fi
 REPO_URL="https://github.com/arslan-qamar/devsetups.git"
 TARGET_DIR="devsetups"
 
-if [ ! -d "$TARGET_DIR" ]; then
-    echo "Cloning repository..."
+if [ ! -d "$TARGET_DIR" ]; then    
+    echo "Cloning repository..."    
     git clone "$REPO_URL" "$TARGET_DIR"    
+    cd "$TARGET_DIR"  
 else
-    echo "Repository already exists. Pulling latest changes..."       
-    git pull
+    echo "Repository already exists. Pulling latest changes..."           
+    cd "$TARGET_DIR"
+    git stash  
+    git pull        
+    git stash pop
 fi
-
-# Change to the repo directory
-cd "$TARGET_DIR"    
 
 # Run the Playbook file 
 PLAYBOOK_FILE="${1:-main.yml}"
