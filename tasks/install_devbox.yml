@@ -4,7 +4,7 @@
   vars:
     devbox_path: /usr/local/bin/devbox
 
-  tasks:
+  block:
     - name: Install Devbox
       shell: curl -fsSL https://get.jetpack.io/devbox | bash -s -- --force
       args:
