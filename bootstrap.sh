@@ -31,10 +31,10 @@ INVENTORY="${2:-localhost,}"
 CONNECTION="${3:-local}"
 STATE=$(case "${4:-install}" in install) echo "present";; uninstall) echo "absent";; *) echo "present";; esac)
 echo "State target set to : " $STATE
+# Specify which tags to run in the playbook (optional)
 TAGS="${5:-}"
 
-echo "[+] Running Ansible playbook..."
-echo `ansible-playbook -vvv "$PLAYBOOK_FILE" -i "$INVENTORY" --connection="$CONNECTION" --extra-vars "state=$STATE" ${TAGS:+--tags "$TAGS"}`
-ansible-playbook -vvv "$PLAYBOOK_FILE" -i "$INVENTORY" --connection="$CONNECTION" --extra-vars `state=$STATE ${TAGS:+--tags "$TAGS"}`
+echo $(ansible-playbook -vvv "$PLAYBOOK_FILE" -i "$INVENTORY" --connection="$CONNECTION" --extra-vars "state=$STATE" ${TAGS:+--tags="$TAGS"})
+ansible-playbook -vvv "$PLAYBOOK_FILE" -i "$INVENTORY" --connection="$CONNECTION" --extra-vars "state=$STATE" ${TAGS:+--tags="$TAGS"}
 
 echo "[✓] Done."

@@ -1,6 +1,4 @@
 ---
-- name: Install base dependencies
-
 - name: Install Devbox via official script
   shell: |
     curl -fsSL https://get.jetpack.io/devbox | bash -s -- --force
