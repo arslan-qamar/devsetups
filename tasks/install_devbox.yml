@@ -5,19 +5,24 @@
   args:
     executable: /bin/bash
     creates: /usr/local/bin/devbox
-  state: "{{ state }}"
+  when: state == "present"
 
 - name: Install or Uninstall Devbox binary
   file:
     path: /usr/local/bin/devbox
     state: "{{ state }}"
+  when: state == "absent"
 
 - name: Manage Devbox bash completion
   file:
     path: /etc/bash_completion.d/devbox
     state: "{{ state }}"
+  when: state == "absent"
 
 - name: Manage Devbox user config
   file:
     path: "{{ ansible_env.HOME }}/.devbox"
     state: "{{ state }}"
+  when: state == "absent"
+
+  ./bootstrap.sh "main.yml" "localhost," "local" "uninstall" "devbox"
