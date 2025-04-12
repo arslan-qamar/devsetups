@@ -35,3 +35,25 @@
         file: tasks/install_vscode.yml
         apply:
           tags: vscode
+  
+    - name: Include Docker installation
+      tags: docker
+      include_tasks:
+        file: tasks/install_docker.yml
+        apply:
+          tags: docker
+
+    - name: Include vagrant installation
+      tags: vagrant
+      include_tasks:
+        file: tasks/install_vagrant.yml
+        apply:
+          tags: vagrant
+    
+    - name: Include VirtualBox installation
+      tags: virtualbox
+      include_tasks:
+        file: tasks/install_virtualbox.yml
+        apply:
+          tags: virtualbox
+    

@@ -8,6 +8,4 @@
   apt:
     name:
       - curl
-      - gnupg2
-      - software-properties-common
     state: "{{ state }}"
