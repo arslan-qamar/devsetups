@@ -24,5 +24,3 @@
     path: "{{ ansible_env.HOME }}/.devbox"
     state: "{{ state }}"
   when: state == "absent"
-
-  ./bootstrap.sh "main.yml" "localhost," "local" "uninstall" "devbox"
