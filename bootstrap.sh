@@ -8,25 +8,30 @@ set -exuo pipefail
 echo "[+] Installing dependencies..."
 if [ -x "$(command -v apt)" ]; then
   sudo apt update
-  sudo apt install -y ansible curl
+  sudo apt install -y ansible curl git
 elif [ -x "$(command -v dnf)" ]; then
-  sudo dnf install -y ansible curl
+  sudo dnf install -y ansible curl git
 elif [ -x "$(command -v yum)" ]; then
   sudo yum install -y epel-release
-  sudo yum install -y ansible curl
+  sudo yum install -y ansible curl git
 elif [ -x "$(command -v pacman)" ]; then
   sudo pacman -Syu
-  sudo pacman -S --noconfirm ansible curl
+  sudo pacman -S --noconfirm ansible curl git
 else
   echo "[-] Unsupported package manager. Please install dependencies manually."
   exit 1
 fi
 
-# Step 2: Playbook file 
+# Checkout the git repo if not already done
+git clone https://github.com/arslan-qamar/devsetups.git
+
+# Change to the devsetups directory
+cd devsetups
+
+# Run the Playbook file 
 PLAYBOOK_FILE="${1:-main.yml}"
 
-
-# Step 3: Run the Ansible playbook (Allow specifying inventory file and connection method)
+# Run the Ansible playbook (Allow specifying inventory file, connection method, desired state, and tags)
 INVENTORY="${2:-localhost,}"
 CONNECTION="${3:-local}"
 STATE=$(case "${4:-install}" in install) echo "present";; uninstall) echo "absent";; *) echo "present";; esac)
