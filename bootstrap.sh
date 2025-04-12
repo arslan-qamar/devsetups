@@ -26,7 +26,7 @@ fi
 REPO_URL="https://github.com/arslan-qamar/devsetups.git"
 TARGET_DIR="devsetups"
 
-if test -d $TARGET_DIR; then
+if [ ! -d "$TARGET_DIR" ]; then
     echo "Cloning repository..."
     git clone "$REPO_URL" "$TARGET_DIR"    
 else
