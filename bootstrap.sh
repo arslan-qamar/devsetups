@@ -30,6 +30,7 @@ PLAYBOOK_FILE="${1:-main.yml}"
 INVENTORY="${2:-localhost,}"
 CONNECTION="${3:-local}"
 STATE=$(case "${4:-install}" in install) echo "present";; uninstall) echo "absent";; *) echo "present";; esac)
+echo "State target set to : " $STATE
 TAGS="${5:-}"
 
 echo "[+] Running Ansible playbook..."
