@@ -25,17 +25,17 @@
       include_tasks: tasks/install_vscode.yml
       tags: vscode
 
-    - name: Include Vagrant installation
-      include_tasks: tasks/install_vagrant.yml
-      tags: vagrant
+    # - name: Include Vagrant installation
+    #   include_tasks: tasks/install_vagrant.yml
+    #   tags: vagrant
 
-    - name: Include VirtualBox installation
-      include_tasks: tasks/install_virtualbox.yml
-      tags: virtualbox
+    # - name: Include VirtualBox installation
+    #   include_tasks: tasks/install_virtualbox.yml
+    #   tags: virtualbox
 
-    - name: Include Docker installation
-      include_tasks: tasks/install_docker.yml
-      tags: docker
+    # - name: Include Docker installation
+    #   include_tasks: tasks/install_docker.yml
+    #   tags: docker
 
     
     
