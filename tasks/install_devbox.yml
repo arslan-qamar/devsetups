@@ -1,26 +1,18 @@
 ---
-- name: Install Devbox via official script
-  shell: |
-    curl -fsSL https://get.jetpack.io/devbox | bash -s -- --force
-  args:
-    executable: /bin/bash
-    creates: /usr/local/bin/devbox
-  when: state == "present"
+- name: Ensure Devbox is installed or removed
+  become: true
+  vars:
+    devbox_path: /usr/local/bin/devbox
 
-- name: Install or Uninstall Devbox binary
-  file:
-    path: /usr/local/bin/devbox
-    state: "{{ state }}"
-  when: state == "absent"
+  tasks:
+    - name: Install Devbox
+      shell: curl -fsSL https://get.jetpack.io/devbox | bash -s -- --force
+      args:
+        creates: "{{ devbox_path }}"
+      when: state == 'present'
 
-- name: Manage Devbox bash completion
-  file:
-    path: /etc/bash_completion.d/devbox
-    state: "{{ state }}"
-  when: state == "absent"
-
-- name: Manage Devbox user config
-  file:
-    path: "{{ ansible_env.HOME }}/.devbox"
-    state: "{{ state }}"
-  when: state == "absent"
+    - name: Remove Devbox
+      file:
+        path: "{{ devbox_path }}"
+        state: absent
+      when: state == 'absent'
