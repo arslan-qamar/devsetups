@@ -1,0 +1,20 @@
+---
+- name: Download Vagrant .deb package
+  get_url:
+    url: https://releases.hashicorp.com/vagrant/2.4.1/vagrant_2.4.1-1_amd64.deb
+    dest: /tmp/vagrant.deb
+  when: state == "present"
+
+- name: Install Vagrant from .deb package
+  apt:
+    deb: /tmp/vagrant.deb
+    state: present
+  when: state == "present"
+  become: yes
+
+- name: Uninstall Vagrant package
+  apt:
+    name: vagrant
+    state: absent
+  when: state == "absent"
+  become: yes

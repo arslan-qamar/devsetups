@@ -1,0 +1,4 @@
+deps_to_install:
+  - curl
+  - git
+  

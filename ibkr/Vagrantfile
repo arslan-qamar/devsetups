@@ -1,22 +1,48 @@
 Vagrant.configure("2") do |config|
-  config.vm.box = "bento/ubuntu-24.04"
+  config.vm.box = "ubuntu/jammy64"
 
   # Forward ports if needed
   # config.vm.network "forwarded_port", guest: 3000, host: 3000
 
   # Optional: hostname
   config.vm.hostname = "ibkr-devbox-#{Time.now.strftime('%Y%m%d-%H%M%S')}"
-
-  # Provision: Run your bootstrap script from GitHub
-  config.vm.provision "shell", inline: <<-SHELL
-    echo "[INFO] Bootstrapping IBKR setup"
-    wget --header="Cache-Control: no-cache" -qO- "https://raw.githubusercontent.com/arslan-qamar/devsetups/refs/heads/main/VM/bootstrap.sh?ts=$(date +%s)" | bash -s "https://raw.githubusercontent.com/arslan-qamar/devsetups/refs/heads/main/ibkr/interactivebrokers.yaml" "localhost," "local"
-  SHELL
-
   # GUI if you want to see the terminal
   config.vm.provider "virtualbox" do |vb|
     vb.gui = true
     vb.memory = 8196
     vb.cpus = 4
+    vb.customize ["modifyvm", :id, "--vram", "128"]
   end
+    
+  # Provision: Run your bootstrap script from GitHub
+  config.vm.provision "shell", inline: <<-SHELL
+    export DEBIAN_FRONTEND=noninteractive
+
+    # Update system and install GNOME + display manager
+    apt-get update
+    #apt-get install -y ubuntu-desktop gnome-shell gdm3 dbus-x11
+    apt-get install -y gnome-shell gdm3 dbus-x11   
+
+    # Enable autologin for vagrant user
+    mkdir -p /etc/gdm3/
+    cat <<EOF > /etc/gdm3/custom.conf
+[daemon]
+AutomaticLoginEnable=true
+AutomaticLogin=vagrant
+EOF
+
+    # Set default target to graphical
+    systemctl set-default graphical.target
+
+    # Install VirtualBox Guest Additions (for better interaction)
+    apt-get install -y virtualbox-guest-utils virtualbox-guest-x11
+
+    # Trigger reboot by creating a marker file
+    if [ ! -f /var/tmp/rebooted_once ]; then
+      touch /var/tmp/rebooted_once
+      echo "Rebooting now to finalize GUI setup..."
+      reboot
+    fi
+  SHELL
+  
 end

@@ -1,0 +1,5 @@
+## Run the following command to install Vagrant (Requires SUDO)
+
+```shell
+ansible-playbook -vvv main.yml -i "localhost" --connection="localhost" --extra-vars "state=present" -t="vagrant" -K
+```

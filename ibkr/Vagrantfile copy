@@ -1,0 +1,25 @@
+Vagrant.configure("2") do |config|
+  config.vm.box = "ubuntu/jammy64"
+
+  # Forward ports if needed
+  # config.vm.network "forwarded_port", guest: 3000, host: 3000
+
+  # Optional: hostname
+  config.vm.hostname = "ibkr-devbox-#{Time.now.strftime('%Y%m%d-%H%M%S')}"
+  # GUI if you want to see the terminal
+    config.vm.provider "virtualbox" do |vb|
+      vb.gui = true
+      vb.memory = 8196
+      vb.cpus = 4
+    end
+    
+  # Provision: Run your bootstrap script from GitHub
+  config.vm.provision "shell", inline: <<-SHELL
+    sudo apt-get update
+    sudo apt-get install -y ubuntu-desktop
+    # echo "[INFO] Bootstrapping IBKR setup"
+    # wget --header="Cache-Control: no-cache" -qO- "https://raw.githubusercontent.com/arslan-qamar/devsetups/refs/heads/main/VM/bootstrap.sh?ts=$(date +%s)" | bash -s "https://raw.githubusercontent.com/arslan-qamar/devsetups/refs/heads/main/main.yml" "localhost," "local", "present", "deps,devbox,docker,githubcli,vscode"
+  SHELL
+
+  
+end

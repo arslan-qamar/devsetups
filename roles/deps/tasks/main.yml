@@ -1,11 +1,12 @@
 ---
 - name: Ensure apt cache is updated
+  become: true
   apt:
     update_cache: yes
     cache_valid_time: 3600
 
-- name: Install base dependencies
-  apt:
-    name:
-      - curl
+- name: Install base dependencies    
+  become: true
+  apt:    
+    name: "{{deps_to_install}}"
     state: "{{ state }}"

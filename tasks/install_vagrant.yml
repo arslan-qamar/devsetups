@@ -1,9 +1,0 @@
----
-- name: Download Vagrant .deb package
-  get_url:
-    url: https://releases.hashicorp.com/vagrant/2.4.1/vagrant_2.4.1-1_amd64.deb
-    dest: /tmp/vagrant.deb
-
-- name: Install Vagrant
-  apt:
-    deb: /tmp/vagrant.deb

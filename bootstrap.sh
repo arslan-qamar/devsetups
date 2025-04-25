@@ -10,15 +10,15 @@ cd ~
 echo "[+] Installing dependencies..."
 if [ -x "$(command -v apt)" ]; then
   sudo apt update
-  sudo apt install -y ansible curl git
+  sudo apt install -y ansible git
 elif [ -x "$(command -v dnf)" ]; then
-  sudo dnf install -y ansible curl git
+  sudo dnf install -y ansible git
 elif [ -x "$(command -v yum)" ]; then
   sudo yum install -y epel-release
-  sudo yum install -y ansible curl git
+  sudo yum install -y ansible git
 elif [ -x "$(command -v pacman)" ]; then
   sudo pacman -Syu
-  sudo pacman -S --noconfirm ansible curl git
+  sudo pacman -S --noconfirm ansible git
 else
   echo "[-] Unsupported package manager. Please install dependencies manually."
   exit 1
@@ -45,7 +45,6 @@ echo "State target set to : " $STATE
 # Specify which tags to run in the playbook (optional)
 TAGS="${5:-}"
 
-echo $(ansible-playbook -vvv "$PLAYBOOK_FILE" -i "$INVENTORY" --connection="$CONNECTION" --extra-vars state=$STATE ${TAGS:+-t="$TAGS"})
 ansible-playbook -vvv "$PLAYBOOK_FILE" -i "$INVENTORY" --connection="$CONNECTION" --extra-vars "state=$STATE" ${TAGS:+-t="$TAGS"}
 
 echo "[✓] Done."

@@ -1,59 +1,24 @@
 ---
-- name: Install Deps and Tools
-  hosts: "{{ target_hosts | default('localhost') }}"
-  become: true
-
-  tasks:
-    - name: Show which host this is running on
-      debug:
-        msg: "Running on {{ inventory_hostname }}"
-
-    - name: Include dependencies
+- name: Running Ansible Roles
+  hosts: "{{ target_hosts | default('localhost') }}"  
+  roles:
+    - role: deps
       tags: deps
-      include_tasks:      
-        file: tasks/install_deps.yml
-        apply:
-          tags: deps
 
-    - name: Include Devbox installation
+    - role: devbox
       tags: devbox
-      include_tasks:     
-        file: tasks/install_devbox.yml
-        apply:
-         tags: devbox
 
-    - name: Include Git Hub CLI installation
-      tags: githubcli
-      include_tasks:
-        file: tasks/install_github_cli.yml
-        apply:
-          tags: githubcli
-
-    - name: Include VSCode installation
-      tags: vscode
-      include_tasks:
-        file: tasks/install_vscode.yml
-        apply:
-          tags: vscode
-  
-    - name: Include Docker installation
-      tags: docker
-      include_tasks:
-        file: tasks/install_docker.yml
-        apply:
-          tags: docker
-
-    - name: Include vagrant installation
-      tags: vagrant
-      include_tasks:
-        file: tasks/install_vagrant.yml
-        apply:
-          tags: vagrant
+    - role: githubcli
+      tags: githubcli    
     
-    - name: Include VirtualBox installation
+    - role: vscode
+      tags: vscode  
+
+    - role: docker
+      tags: docker   
+    
+    - role: vagrant
+      tags: vagrant  
+
+    - role: virtualbox
       tags: virtualbox
-      include_tasks:
-        file: tasks/install_virtualbox.yml
-        apply:
-          tags: virtualbox
-    

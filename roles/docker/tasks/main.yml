@@ -25,14 +25,41 @@
 - name: Update apt package index after adding Docker repo
   apt:
     update_cache: yes
+  
 
 - name: Install Docker CE
   apt:
     name: docker-ce
     state: "{{ state }}"
+  when: state == "present"
+  
+  
+- name: Gather service facts
+  service_facts:
 
-- name: Ensure Docker service is running
+- name: Ensure Docker service is started
+  assert:
+    that:
+      - "'docker.service' in ansible_facts.services"
+      - "ansible_facts.services['docker.service'].state == 'running'"
+  when: state == "present"
+
+- name: Ensure Docker service is started
   service:
     name: docker
-    state: "{{ state }}"
-    enabled: true
+    state: "started"
+  when: state == "present"
+
+
+- name: Ensure Docker service is stopped
+  assert:
+    that:
+      - "'docker.service' in ansible_facts.services"
+      - "ansible_facts.services['docker.service'].state == 'stopped'"
+  when: state == "absent"
+
+- name: Ensure Docker service is absent
+  service:
+    name: docker
+    state: "stopped"
+  when: state == "absent"
