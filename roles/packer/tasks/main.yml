@@ -1,0 +1,32 @@
+- name: Add HashiCorp GPG key
+  become: yes
+  apt_key:
+    url: https://apt.releases.hashicorp.com/gpg
+    state: present
+  when: state == "present"
+
+- name: Add HashiCorp apt repository
+  become: yes
+  apt_repository:
+    repo: "deb [arch=amd64 signed-by=/etc/apt/trusted.gpg.d/hashicorp.asc] https://apt.releases.hashicorp.com {{ ansible_lsb.codename }} main"
+    state: present
+    filename: hashicorp
+  when: state == "present"
+
+- name: Update apt cache
+  become: yes
+  apt:
+    update_cache: yes
+    cache_valid_time: 3600  
+
+- name: Install packer
+  apt:
+    name: packer
+    state: present
+  when: state == "present"
+
+- name: Remove packer if state is absent
+  apt:
+    name: packer
+    state: absent
+  when: state == "absent"

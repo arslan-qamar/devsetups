@@ -20,5 +20,8 @@
     - role: vagrant
       tags: vagrant  
 
+    - role: packer
+      tags: packer
+      
     - role: virtualbox
       tags: virtualbox
