@@ -13,6 +13,7 @@
     filename: vscode
 
 - name: Install Visual Studio Code
+  become: true
   apt:
     name: code
     state: "{{ state }}"
