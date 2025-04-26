@@ -1,0 +1,19 @@
+zsh_plugins:
+  - extract
+  - fzf
+  - colored-man-pages
+  - direnv
+  - history-substring-search
+  - kubectl
+  - npm
+  - nvm
+  - pip
+  - python
+  - sudo  
+  - terraform
+  - yarn
+  - z
+  - zsh-autosuggestions
+  - zsh-syntax-highlighting
+  - git
+  - docker

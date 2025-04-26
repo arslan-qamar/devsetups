@@ -5,6 +5,9 @@
     - role: deps
       tags: deps
 
+    - role: zsh
+      tags: zsh
+
     - role: devbox
       tags: devbox
 

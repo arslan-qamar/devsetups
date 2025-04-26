@@ -1,0 +1,91 @@
+- name: Ensure zsh is {{ state }}
+  become: yes
+  apt:
+    name: zsh
+    state: "{{ state }}"
+    update_cache: yes
+
+- name: Set default shell to zsh using chsh
+  become: yes
+  shell: chsh -s /usr/bin/zsh 
+  args:
+    executable: /bin/bash
+  when: state == 'present'
+
+- name: Install Oh My Zsh   
+  shell: |
+    sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
+  args:
+    creates: "~/.oh-my-zsh"
+  when: state == 'present' 
+
+- name: Remove Oh My Zsh   
+  file:
+    path: "~/.oh-my-zsh"
+    state: absent
+  when: state == 'absent' 
+
+- name: Ensure fzf is {{ state }}
+  become: yes
+  apt:
+    name: fzf
+    state: "{{ state }}"
+    update_cache: yes
+
+- name: Manage direnv
+  become: yes
+  block:
+    - name: Install direnv
+      shell: curl -sfL https://direnv.net/install.sh | bash
+      args:
+        executable: /bin/bash
+      when: state == "present"
+
+    - name: Uninstall direnv
+      file:
+        path: /usr/local/bin/direnv
+        state: absent
+      when: state == "absent"
+
+- name: Setup custom oh-my-zsh plugins repos
+  git:
+    repo: "{{ item.repo }}"
+    dest: "{{ ansible_env.HOME }}/.oh-my-zsh/custom/plugins/{{ item.name }}"
+    update: yes
+    force: yes
+    clone: yes
+    accept_hostkey: yes
+  loop:
+    - { name: 'zsh-autosuggestions', repo: 'https://github.com/zsh-users/zsh-autosuggestions' }
+    - { name: 'zsh-syntax-highlighting', repo: 'https://github.com/zsh-users/zsh-syntax-highlighting' }
+  when: state == 'present'
+
+- name: Remove custom oh-my-zsh plugins
+  file:
+    path: "{{ ansible_env.HOME }}/.oh-my-zsh/custom/plugins/{{ item.name }}"
+    state: absent
+  loop:
+    - { name: 'zsh-autosuggestions' }
+    - { name: 'zsh-syntax-highlighting' }
+  when: state == 'absent'
+
+- name: Remove the entire plugins block in .zshrc
+  ansible.builtin.replace:
+    path: "{{ ansible_env.HOME }}/.zshrc"
+    regexp: '^\s*plugins=\([^)]*\)'
+    replace: 'plugins=()'
+
+- name: Manage plugins list in .zshrc
+  lineinfile:
+    path: "{{ ansible_env.HOME }}/.zshrc"
+    regexp: '^plugins='
+    line: >-
+      plugins=(
+        {% for plugin in zsh_plugins %}
+        {{ plugin }}
+        {% if not loop.last %}
+        {% endif %}
+        {% endfor %}
+      )
+    backrefs: yes
+  when: state == 'present'
