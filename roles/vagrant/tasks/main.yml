@@ -1,20 +1,33 @@
----
-- name: Download Vagrant .deb package
-  get_url:
-    url: https://releases.hashicorp.com/vagrant/2.4.1/vagrant_2.4.1-1_amd64.deb
-    dest: /tmp/vagrant.deb
-  when: state == "present"
-
-- name: Install Vagrant from .deb package
-  apt:
-    deb: /tmp/vagrant.deb
-    state: present
-  when: state == "present"
+- name: Download and dearmor HashiCorp GPG key
+  shell: |
+    wget -qO- https://apt.releases.hashicorp.com/gpg | gpg --dearmor -o /etc/apt/trusted.gpg.d/hashicorp.gpg
+  args:
+    creates: /etc/apt/trusted.gpg.d/hashicorp.gpg
   become: yes
+  when: state == "present"
+  
+- name: Remove HashiCorp GPG key
+  file:
+    path: /etc/apt/trusted.gpg.d/hashicorp.gpg
+    state: absent
+  become: yes
+  when: state == "absent"
 
-- name: Uninstall Vagrant package
+- name: Manage HashiCorp apt repository for Vagrant
+  become: yes
+  apt_repository:
+    repo: "deb [arch=amd64 signed-by=/etc/apt/trusted.gpg.d/hashicorp.gpg] https://apt.releases.hashicorp.com {{ ansible_distribution_release | lower }} main"
+    filename: hashicorp
+    state: "{{ state }}"
+  
+- name: Update apt cache
+  become: yes
+  apt:
+    update_cache: yes
+    cache_valid_time: 3600  
+
+- name: "{{ 'Remove' if state == 'absent' else 'Setup' }} Vagrant"
+  become: yes
   apt:
     name: vagrant
-    state: absent
-  when: state == "absent"
-  become: yes
+    state: "{{ state }}"
