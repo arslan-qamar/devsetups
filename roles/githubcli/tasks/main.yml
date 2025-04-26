@@ -1,12 +1,43 @@
 ---
-- name: Install GitHub CLI (gh)
-  apt:
-    deb: https://github.com/cli/cli/releases/download/v2.49.0/gh_2.49.0_linux_amd64.deb
-    state: present
+- name: Ensure /etc/apt/keyrings directory exists
+  file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: '0755'
   when: state == "present"
 
-- name: Uninstall GitHub CLI (gh)
+- name: Download GitHub CLI GPG key
+  get_url:
+    url: https://cli.github.com/packages/githubcli-archive-keyring.gpg
+    dest: /etc/apt/keyrings/githubcli-archive-keyring.gpg
+    mode: '0644'
+  become: yes
+  when: state == "present"
+
+- name: "{{ 'Remove' if state == 'absent' else 'Setup' }} GitHub CLI repository"
+  apt_repository:
+    repo: "deb [arch={{ ansible_architecture | regex_replace('x86_64','amd64') }} signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main"
+    filename: github-cli
+    state: "{{ state }}"
+    update_cache: yes
+  become: yes  
+
+- name: Ensure gh CLI is {{ 'removed' if state == 'absent' else 'setup' }} 
   apt:
     name: gh
-    state: absent
-  when: state == "absent"
+    state: "{{ state }}"
+  become: yes  
+
+- name: Check if git credential helper is already set
+  shell: git config --global credential.helper
+  register: git_cred_helper
+  changed_when: false
+  failed_when: false
+
+- name: Set git credential helper to use gh auth
+  shell: git config --global credential.helper '!gh auth git-credential'
+  when: git_cred_helper.stdout != "!gh auth git-credential" and state == "present"
+
+- name: UnSet git credential helper to use nothing
+  shell: git config --global credential.helper ''
+  when: git_cred_helper.stdout == "!gh auth git-credential" and state == "absent"
