@@ -2,64 +2,61 @@
 - name: Update apt package index
   apt:
     update_cache: yes
-
-- name: Install required packages
+  when: state == "present"
+  become: yes
+  
+- name: "Install packages"
   apt:
     name:
       - apt-transport-https
       - ca-certificates
       - curl
-      - software-properties-common
-    state: "{{ state }}"
+      - software-properties-common    
+  when: state == "present"
+  become: yes
 
-- name: Add Docker's official GPG key
+- name: "Add Docker's official GPG key"
   apt_key:
     url: https://download.docker.com/linux/ubuntu/gpg
-    state: "{{ state }}"
+  when: state == "present"
+  become: yes
 
-- name: Set up the Docker repository
+- name: "{{ 'Remove' if state == 'absent' else 'Setup' }} up the Docker repository"
   apt_repository:
     repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable
     state: "{{ state }}"
+  become: yes
 
 - name: Update apt package index after adding Docker repo
   apt:
     update_cache: yes
-  
-
-- name: Install Docker CE
+  when: state == "present"  
+  become: yes
+    
+- name: "{{ 'Remove' if state == 'absent' else 'Install' }} Docker components"
   apt:
-    name: docker-ce
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - docker-buildx-plugin
+      - docker-compose-plugin
     state: "{{ state }}"
-  when: state == "present"
-  
-  
+    purge: "{{ 'yes' if state == 'absent' else 'no' }}"
+  become: yes
+
 - name: Gather service facts
   service_facts:
 
-- name: Ensure Docker service is started
+- name: Ensuring Docker service is running
   assert:
     that:
       - "'docker.service' in ansible_facts.services"
-      - "ansible_facts.services['docker.service'].state == 'running'"
-  when: state == "present"
+      - "ansible_facts.services['docker.service'].state == ('running' if state == 'present')"  
+  when: state == "present"  
 
-- name: Ensure Docker service is started
-  service:
-    name: docker
-    state: "started"
-  when: state == "present"
-
-
-- name: Ensure Docker service is stopped
+- name: Ensuring Docker service is uninstalled
   assert:
     that:
-      - "'docker.service' in ansible_facts.services"
-      - "ansible_facts.services['docker.service'].state == 'stopped'"
-  when: state == "absent"
-
-- name: Ensure Docker service is absent
-  service:
-    name: docker
-    state: "stopped"
-  when: state == "absent"
+      - "'docker.service' not in ansible_facts.services"      
+  when: state == "absent"  
