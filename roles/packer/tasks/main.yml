@@ -1,17 +1,24 @@
-- name: Add HashiCorp GPG key
+- name: Manage HashiCorp GPG key 
+  shell: |
+    curl -fsSL https://apt.releases.hashicorp.com/gpg | gpg --dearmor -o /etc/apt/trusted.gpg.d/hashicorp.gpg
+  args:
+    creates: /etc/apt/trusted.gpg.d/hashicorp.gpg
   become: yes
-  apt_key:
-    url: https://apt.releases.hashicorp.com/gpg
-    state: present
   when: state == "present"
 
-- name: Add HashiCorp apt repository
+- name: Remove HashiCorp GPG key
+  file:
+    path: /etc/apt/trusted.gpg.d/hashicorp.gpg
+    state: absent
+  become: yes
+  when: state == "absent"
+
+- name: Manage HashiCorp apt repository
   become: yes
   apt_repository:
-    repo: "deb [arch=amd64 signed-by=/etc/apt/trusted.gpg.d/hashicorp.asc] https://apt.releases.hashicorp.com {{ ansible_lsb.codename }} main"
-    state: present
+    repo: "deb [arch=amd64 signed-by=/etc/apt/trusted.gpg.d/hashicorp.gpg] https://apt.releases.hashicorp.com {{ ansible_distribution_release }} main"
+    state: "{{ state }}"
     filename: hashicorp
-  when: state == "present"
 
 - name: Update apt cache
   become: yes
@@ -19,14 +26,9 @@
     update_cache: yes
     cache_valid_time: 3600  
 
-- name: Install packer
+- name: "{{ 'Remove' if state == 'absent' else 'Setup' }} packer"
+  become: yes
   apt:
     name: packer
-    state: present
-  when: state == "present"
+    state: "{{ state }}"
 
-- name: Remove packer if state is absent
-  apt:
-    name: packer
-    state: absent
-  when: state == "absent"

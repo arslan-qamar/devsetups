@@ -14,12 +14,14 @@
     owner: root
     group: root
     state: file
+  become: yes
   when: state == "present"
 
-- name: Install or Uninstall Devbox binary
+- name: "{{ 'Remove' if state == 'absent' else 'Setup' }} Devbox binary "
   file:
     path: /usr/local/bin/devbox
     state: "{{ state }}"
+  become: yes
   when: state == "absent"
 
 - name: Manage Devbox bash completion
