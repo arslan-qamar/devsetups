@@ -1,0 +1,19 @@
+#cloud-config
+autoinstall:
+  version: 1
+  identity:
+    hostname: ubuntu-vm
+    username: ubuntu
+    password: "$6$Y6IBLDCYg63Nffd7$JBncCo.DKEEtnu7kdCmSue8NG/HzOu/b2jftRzLGLoSyR1C8UIzlvpVIykjdv454x1lYSm5bqYWMR2N85KSAS/"
+  ssh:
+    install-server: true
+    authorized-keys:
+      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIApuX5rsn0jQlhcmjq9QK0vmIAo5ovn/+KYPFpY6Pfav ubuntu@ubuntu-vm
+  storage:
+    layout:
+      name: direct
+  keyboard:
+    layout: us
+  locale: en_US
+  
+

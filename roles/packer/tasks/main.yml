@@ -32,3 +32,9 @@
     name: packer
     state: "{{ state }}"
 
+- name: "{{ 'Remove' if state == 'absent' else 'Setup' }} xorriso for Packer CD ISO generation"
+  become: yes
+  apt:
+    name: xorriso
+    state: "{{ state }}"
+
