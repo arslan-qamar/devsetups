@@ -35,15 +35,15 @@ git clone "$REPO_URL" "$TARGET_DIR"
 cd "$TARGET_DIR"  
 
 # Run the Playbook file 
-PLAYBOOK_FILE="${PLAYBOOK_FILE:-main.yml}"
+PLAYBOOK_FILE="${1:-main.yml}"
 
 # Run the Ansible playbook (Allow specifying inventory file, connection method, desired state, and tags)
-INVENTORY="${INVENTORY:-localhost,}"
-CONNECTION="${CONNECTION:-local}"
-STATE=$(case "${STATE:-install}" in install) echo "present";; uninstall) echo "absent";; *) echo "present";; esac)
+INVENTORY="${2:-localhost,}"
+CONNECTION="${3:-local}"
+STATE=$(case "${4:-install}" in install) echo "present";; uninstall) echo "absent";; *) echo "present";; esac)
 echo "State target set to : " $STATE
 # Specify which tags to run in the playbook (optional)
-TAGS="${TAGS:-}"
+TAGS="${5:-}"
 
 ansible-playbook -vvv "$PLAYBOOK_FILE" -i "$INVENTORY" --connection="$CONNECTION" --extra-vars "state=$STATE" ${TAGS:+-t="$TAGS"}
 
