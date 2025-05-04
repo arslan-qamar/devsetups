@@ -60,9 +60,11 @@ build {
     name = "Install Minimal GNOME Desktop"
     inline = [      
       "echo 'nameserver 8.8.8.8' | sudo tee /etc/resolv.conf > /dev/null",
-      "sudo DEBIAN_FRONTEND=noninteractive apt-get update",
+      "sudo DEBIAN_FRONTEND=noninteractive apt-get update --fix-missing",
       "sudo DEBIAN_FRONTEND=noninteractive apt-get install -y ubuntu-desktop-minimal",
       "sudo DEBIAN_FRONTEND=noninteractive systemctl set-default graphical.target",      
+      "sudo systemctl disable systemd-networkd-wait-online.service",
+      "sudo systemctl mask systemd-networkd-wait-online.service",
     ]
   }  
 

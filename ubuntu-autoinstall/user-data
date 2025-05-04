@@ -8,6 +8,8 @@ autoinstall:
   ssh:
      install-server: yes
      allow-pw: yes
+     authorized-keys:
+       - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDSHw9UWm6qTEVycCtm1P/Z2wlZU66TK2UAcYlAbdFtIOp1zliXOWupn0uWSYAEXVwL0S1XnjtH7B5l/uNlEs0bF/z0v7u4rA2CKatbvtQAJcG+fnvi8ukHbeA6wrXhKjJkr72kyOcRO17Zw17ZZ+3QtOMsG0k2QdZVigeVIhb3pyB+q3dUgdy7ZxOifEyGfIjH07Hjcx+iBgNPkOR0vj4icvGlSGJO/6VPrlLsuWHCgoO9FvjqHwDkeiao+jfvuqkMMNbqjL96cnxnzOdzCJxGiGAlgmoVODsDyP2hj66qKaQMS/7+JtyoCu/Tz45IV/rp5YGV66vUGFhlFIWbhsOdOl6GINDK5x3XPcY/KjTAVZf5bjeYzROIaR/TQefOnQhSf1X8i2pB6VLvoUOGeEwJfTtcMBcAtLbhK1fIAbBtuXbIQ3cACS7mRwFV8OKj/wFGhYK3p7q196dTDks68UOgZKxlHgjHnOQNZRD39PgFsPM2byIvzafhoFsYC02OGGyg2/GF0HG0KB3PXzR+eaXFGroPsfDofq2LCIC/KM4UjWNAQffKVwIvSm+niW5npwTOHK/aUSUzVQIYRAhMSwUHRo6l+IwvnVoHTcLtZVLW+ViVNagAZIEuy2rbfu2Fl26gxZjM2Z4yesnqZ/j6trD/Qj+9+HpHXQ+ajXrjN7sMYQ== arslan@ubuntu-bm
   apt:
     fallback: offline-install   
   users:
@@ -15,10 +17,12 @@ autoinstall:
       sudo: ALL=(ALL) NOPASSWD:ALL
       groups: sudo
       shell: /bin/bash
+      ssh_authorized_keys:
+        - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDSHw9UWm6qTEVycCtm1P/Z2wlZU66TK2UAcYlAbdFtIOp1zliXOWupn0uWSYAEXVwL0S1XnjtH7B5l/uNlEs0bF/z0v7u4rA2CKatbvtQAJcG+fnvi8ukHbeA6wrXhKjJkr72kyOcRO17Zw17ZZ+3QtOMsG0k2QdZVigeVIhb3pyB+q3dUgdy7ZxOifEyGfIjH07Hjcx+iBgNPkOR0vj4icvGlSGJO/6VPrlLsuWHCgoO9FvjqHwDkeiao+jfvuqkMMNbqjL96cnxnzOdzCJxGiGAlgmoVODsDyP2hj66qKaQMS/7+JtyoCu/Tz45IV/rp5YGV66vUGFhlFIWbhsOdOl6GINDK5x3XPcY/KjTAVZf5bjeYzROIaR/TQefOnQhSf1X8i2pB6VLvoUOGeEwJfTtcMBcAtLbhK1fIAbBtuXbIQ3cACS7mRwFV8OKj/wFGhYK3p7q196dTDks68UOgZKxlHgjHnOQNZRD39PgFsPM2byIvzafhoFsYC02OGGyg2/GF0HG0KB3PXzR+eaXFGroPsfDofq2LCIC/KM4UjWNAQffKVwIvSm+niW5npwTOHK/aUSUzVQIYRAhMSwUHRo6l+IwvnVoHTcLtZVLW+ViVNagAZIEuy2rbfu2Fl26gxZjM2Z4yesnqZ/j6trD/Qj+9+HpHXQ+ajXrjN7sMYQ== arslan@ubuntu-bm
   late-commands:
       - echo 'ubuntu ALL=(ALL) NOPASSWD:ALL' > /target/etc/sudoers.d/ubuntu
       - chmod 0440 /target/etc/sudoers.d/ubuntu
-  
-  
+
+
 
 

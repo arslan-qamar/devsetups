@@ -29,7 +29,7 @@ REPO_URL="https://github.com/arslan-qamar/devsetups.git"
 TARGET_DIR="devsetups"
 
  # Remove existing directory if it exists
-rm -r "$TARGET_DIR"
+rm -rf "$TARGET_DIR"
 echo "Cloning repository..."    
 git clone "$REPO_URL" "$TARGET_DIR"    
 cd "$TARGET_DIR"  
