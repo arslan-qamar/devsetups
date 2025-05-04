@@ -1,48 +1,29 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
 Vagrant.configure("2") do |config|
-  config.vm.box = "ubuntu/jammy64"
+  config.vm.box = "ubuntu-dev"
+  config.ssh.username = "ubuntu"  
+  config.ssh.private_key_path = ["~/.ssh/vagrant_custom_key"] 
+  config.ssh.insert_key = false
+  default_interface = `ip route get 8.8.8.8 | grep -oP 'dev \\K\\S+'`.strip
+  config.vm.network "public_network", bridge: default_interface
+  config.vbguest.auto_update = true
 
-  # Forward ports if needed
-  # config.vm.network "forwarded_port", guest: 3000, host: 3000
+  # Run bootstrap script on first boot
+  config.vm.provision "shell", inline: <<-SHELL
+    set -e
+    echo "Downloading and running bootstrap..."
+    wget --header="Cache-Control: no-cache" -qO- "https://raw.githubusercontent.com/arslan-qamar/devsetups/refs/heads/main/bootstrap.sh?ts=$(date +%s)" | bash -s "main.yml" "localhost," "local" "present" "deps,devbox,docker,githubcli,vscode"
+  SHELL
 
-  # Optional: hostname
-  config.vm.hostname = "ibkr-devbox-#{Time.now.strftime('%Y%m%d-%H%M%S')}"
-  # GUI if you want to see the terminal
   config.vm.provider "virtualbox" do |vb|
     vb.gui = true
-    vb.memory = 8196
-    vb.cpus = 4
-    vb.customize ["modifyvm", :id, "--vram", "128"]
+    vb.memory = "8192"
+    vb.customize ["modifyvm", :id, "--clipboard-mode", "bidirectional"]
+    vb.customize ["modifyvm", :id, "--audio", "alsa"]
+    vb.customize ["modifyvm", :id, "--audiocontroller", "ac97"]
+    vb.customize ["modifyvm", :id, "--accelerate3d", "on"]
+    vb.customize ["modifyvm", :id, "--audioout", "on"]
   end
-    
-  # Provision: Run your bootstrap script from GitHub
-  config.vm.provision "shell", inline: <<-SHELL
-    export DEBIAN_FRONTEND=noninteractive
-
-    # Update system and install GNOME + display manager
-    apt-get update
-    #apt-get install -y ubuntu-desktop gnome-shell gdm3 dbus-x11
-    apt-get install -y gnome-shell gdm3 dbus-x11   
-
-    # Enable autologin for vagrant user
-    mkdir -p /etc/gdm3/
-    cat <<EOF > /etc/gdm3/custom.conf
-[daemon]
-AutomaticLoginEnable=true
-AutomaticLogin=vagrant
-EOF
-
-    # Set default target to graphical
-    systemctl set-default graphical.target
-
-    # Install VirtualBox Guest Additions (for better interaction)
-    apt-get install -y virtualbox-guest-utils virtualbox-guest-x11
-
-    # Trigger reboot by creating a marker file
-    if [ ! -f /var/tmp/rebooted_once ]; then
-      touch /var/tmp/rebooted_once
-      echo "Rebooting now to finalize GUI setup..."
-      reboot
-    fi
-  SHELL
-  
 end
