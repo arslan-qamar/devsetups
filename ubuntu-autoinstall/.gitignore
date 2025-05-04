@@ -1,1 +1,2 @@
-output-ubuntu/
+output/
+.vagrant/
