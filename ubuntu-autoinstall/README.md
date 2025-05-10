@@ -16,19 +16,32 @@ To set up the host environment with VirtualBox, Packer, and Vagrant, run the fol
 wget --header="Cache-Control: no-cache" -qO- "https://raw.githubusercontent.com/arslan-qamar/devsetups/refs/heads/main/bootstrap.sh?ts=$(date +%s)" | bash -s "main.yml" "localhost," "local" "present" "virtualbox,packer,vagrant"
 ```
 
-## Default Credentials
-
-The default username and password for the setup are:
-- **Username:** `ubuntu`
-- **Password:** `ubuntu`
-
 ## Building the Image
+
+Run the bootstrap script to create the Packer VM image:
+
+```bash
+./bootstrap.sh
+```
+
+This script will:
+1. Prompt you to create a custom password for the 'ubuntu' user
+2. Generate an SSH key pair (vagrant_custom_key) for secure authentication
+3. Create the `user-data` file with your custom settings
+4. Run Packer to build the VM image
 
 Once the `ubuntu-dev.box` is built, add it to Vagrant using the following command:
 
 ```bash
-vagrant box add ubuntu-dev
+vagrant box add ubuntu-dev output/ubuntu-dev.box
 ```
+
+## Default Configuration
+
+The VM is configured with:
+- **Username:** `ubuntu`
+- **Password:** Your custom password (set during bootstrap)
+- **SSH Authentication:** Key-based (using vagrant_custom_key)
 
 ## Running the Application
 
