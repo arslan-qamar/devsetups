@@ -1,8 +1,8 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
-# Import the base box from ../ubuntu-autoinstall/vagrant-base/Vagrantfile.base
-File.expand_path("../ubuntu-autoinstall/vagrant-base/Vagrantfile.base", __FILE__)  
+# Load the base Vagrantfile
+load File.expand_path("Vagrantfile.base", __dir__)
 
 Vagrant.configure("2") do |config|
   config.vm.box = "ubuntu-dev"
