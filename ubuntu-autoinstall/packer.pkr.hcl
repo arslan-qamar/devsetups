@@ -22,6 +22,11 @@ variable "ssh_password" {
   default = "ubuntu"
 }
 
+variable "ubuntu_password" {
+  type    = string
+  default = "$6$Y6IBLDCYg63Nffd7$JBncCo.DKEEtnu7kdCmSue8NG/HzOu/b2jftRzLGLoSyR1C8UIzlvpVIykjdv454x1lYSm5bqYWMR2N85KSAS/"
+}
+
 source "virtualbox-iso" "ubuntu" {
   guest_os_type    = "Ubuntu_64"
   iso_url          = var.iso_url

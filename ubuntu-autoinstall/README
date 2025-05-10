@@ -1,0 +1,45 @@
+# Ubuntu Auto-Install Setup
+
+This guide provides instructions to build a package image using Packer and VirtualBox. Follow the steps below to set up your environment and create the required image.
+
+## Prerequisites
+
+Ensure the following tools are installed on your system:
+- [Packer](https://www.packer.io/)
+- [VirtualBox](https://www.virtualbox.org/)
+
+## Setup Instructions
+
+To set up the host environment with VirtualBox, Packer, and Vagrant, run the following command:
+
+```bash
+wget --header="Cache-Control: no-cache" -qO- "https://raw.githubusercontent.com/arslan-qamar/devsetups/refs/heads/main/bootstrap.sh?ts=$(date +%s)" | bash -s "main.yml" "localhost," "local" "present" "virtualbox,packer,vagrant"
+```
+
+## Default Credentials
+
+The default username and password for the setup are:
+- **Username:** `ubuntu`
+- **Password:** `ubuntu`
+
+## Building the Image
+
+Once the `ubuntu-dev.box` is built, add it to Vagrant using the following command:
+
+```bash
+vagrant box add ubuntu-dev
+```
+
+## Running the Application
+
+Navigate to the application-specific folders (e.g., `ibkr`) and start the Vagrant environment:
+
+```bash
+cd ibkr
+vagrant up
+```
+
+## Additional Information
+
+For more details, refer to the respective README files in the application-specific folders.
+

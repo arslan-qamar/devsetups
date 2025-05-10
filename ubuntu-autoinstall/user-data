@@ -4,7 +4,7 @@ autoinstall:
   identity:
     hostname: ubuntu-vm
     username: ubuntu
-    password: "$6$Y6IBLDCYg63Nffd7$JBncCo.DKEEtnu7kdCmSue8NG/HzOu/b2jftRzLGLoSyR1C8UIzlvpVIykjdv454x1lYSm5bqYWMR2N85KSAS/"  
+    password: "{{ env('ubuntu_password') }}"  # Use environment variable for password
   ssh:
      install-server: yes
      allow-pw: yes
