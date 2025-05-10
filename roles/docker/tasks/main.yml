@@ -45,6 +45,15 @@
     purge: "{{ 'yes' if state == 'absent' else 'no' }}"
   become: yes
 
+- name: Add current user to the docker group
+  become: yes
+  user:
+    name: "{{ ansible_user_id }}"
+    groups: docker
+    append: yes
+  become: yes
+  when: state == "present"
+
 - name: Gather service facts
   service_facts:
 
@@ -59,4 +68,4 @@
   assert:
     that:
       - "'docker.service' not in ansible_facts.services"      
-  when: state == "absent"  
+  when: state == "absent"
