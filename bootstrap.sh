@@ -26,10 +26,10 @@ fi
 
 # Checkout fresh git repo 
 REPO_URL="https://github.com/arslan-qamar/devsetups.git"
-TARGET_DIR="devsetups"
+TARGET_DIR="devsetups-execute"
 
  # Remove existing directory if it exists
-rm -rf "$TARGET_DIR"
+rm -r "$TARGET_DIR"
 echo "Cloning repository..."    
 git clone "$REPO_URL" "$TARGET_DIR"    
 cd "$TARGET_DIR"  

@@ -9,12 +9,17 @@ packer {
 
 variable "iso_url" {
   type    = string
-  default = "file:///media/arslan/Ubuntu Data/ISO/ubuntu-24.04.2-live-server-amd64.iso"
+  default = "file:///media/arslan/Ubuntu Data/ISO/ubuntu-24.04.2-desktop-amd64.iso"
 }
 
 variable "iso_checksum" {
   type    = string
-  default = "sha256:d6dab0c3a657988501b4bd76f1297c053df710e06e0c3aece60dead24f270b4d"
+  default = "sha256:d7fe3d6a0419667d2f8eff12796996328daa2d4f90cd9f87aa9371b362f987bf"
+}
+
+variable "ssh_password" {
+  type    = string
+  default = "ubuntu"
 }
 
 source "virtualbox-iso" "ubuntu" {
@@ -27,15 +32,16 @@ source "virtualbox-iso" "ubuntu" {
 
   communicator = "ssh"
   ssh_username = "ubuntu"
-  ssh_password = "ubuntu"
+  ssh_password = var.ssh_password
   ssh_timeout  = "20m"
 
   cpus       = 8
-  memory     = 8096
+  memory     = 4096
   disk_size  = 50240
 
   vboxmanage = [
-    ["modifyvm", "{{.Name}}", "--graphicscontroller", "vmsvga"],
+    ["modifyvm", "{{.Name}}", "--graphicscontroller", "VMSVGA"],
+    ["modifyvm", "{{.Name}}", "--firmware", "efi"],
     ["modifyvm", "{{.Name}}", "--vram", "128"]
   ]
 
@@ -56,17 +62,6 @@ source "virtualbox-iso" "ubuntu" {
 build {
   sources = ["source.virtualbox-iso.ubuntu"]
 
-  provisioner "shell" {
-    name = "Install Minimal GNOME Desktop"
-    inline = [      
-      "echo 'nameserver 8.8.8.8' | sudo tee /etc/resolv.conf > /dev/null",
-      "sudo DEBIAN_FRONTEND=noninteractive apt-get update --fix-missing",
-      "sudo DEBIAN_FRONTEND=noninteractive apt-get install -y ubuntu-desktop-minimal",
-      "sudo DEBIAN_FRONTEND=noninteractive systemctl set-default graphical.target",      
-      "sudo systemctl disable systemd-networkd-wait-online.service",
-      "sudo systemctl mask systemd-networkd-wait-online.service",
-    ]
-  }  
 
   post-processor "vagrant" {
     output = "output/ubuntu-dev.box"
