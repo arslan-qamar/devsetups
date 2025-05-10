@@ -1,3 +1,4 @@
 .vagrant/
 output/
 output-ubuntu/
+user-data
