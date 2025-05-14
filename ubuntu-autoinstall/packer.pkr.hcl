@@ -17,6 +17,25 @@ variable "iso_checksum" {
   default = "sha256:d7fe3d6a0419667d2f8eff12796996328daa2d4f90cd9f87aa9371b362f987bf"
 }
 
+variable "box_name" {
+  type    = string
+  default = "ubuntu-dev"
+}
+
+variable "cpus" {
+  type    = number
+  default = 10
+}
+
+variable "memory" {
+  type    = number
+  default = 16384 # 16GB
+}
+
+variable "disk_size" {
+  type    = number
+  default = 150240 # 150GB
+}
 
 source "virtualbox-iso" "ubuntu" {
   guest_os_type    = "Ubuntu_64"
@@ -31,9 +50,9 @@ source "virtualbox-iso" "ubuntu" {
   ssh_private_key_file = "./vagrant_custom_key"
   ssh_timeout  = "20m"
 
-  cpus       = 8
-  memory     = 4096
-  disk_size  = 50240
+  cpus       = var.cpus
+  memory     = var.memory
+  disk_size  = var.disk_size
 
   vboxmanage = [
     ["modifyvm", "{{.Name}}", "--graphicscontroller", "VMSVGA"],
@@ -58,8 +77,7 @@ source "virtualbox-iso" "ubuntu" {
 build {
   sources = ["source.virtualbox-iso.ubuntu"]
 
-
   post-processor "vagrant" {
-    output = "output/ubuntu-dev.box"
+    output = "output/${var.box_name}.box"
   }
 }
