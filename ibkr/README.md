@@ -24,7 +24,7 @@ vagrant up
 On VM startup, the following command is executed to configure the environment:
 
 ```bash
-wget --header="Cache-Control: no-cache" -qO- "https://raw.githubusercontent.com/arslan-qamar/devsetups/refs/heads/main/bootstrap.sh?ts=$(date +%s)" | bash -s "https://raw.githubusercontent.com/arslan-qamar/devsetups/refs/heads/main/main.yml" "localhost," "local" "install" "deps,devbox,docker,githubcli,vscode"
+wget --header="Cache-Control: no-cache" -qO- "https://raw.githubusercontent.com/arslan-qamar/devsetups/refs/heads/main/bootstrap.sh?ts=$(date +%s)" | bash -s "main.yml" "localhost," "local" "install" "deps,devbox,docker,githubcli,vscode,zsh"
 ```
 
 ## How It Works
