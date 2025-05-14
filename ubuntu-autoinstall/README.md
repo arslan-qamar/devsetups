@@ -13,7 +13,7 @@ Ensure the following tools are installed on your system:
 To set up the host environment with VirtualBox, Packer, and Vagrant, run the following command:
 
 ```bash
-wget --header="Cache-Control: no-cache" -qO- "https://raw.githubusercontent.com/arslan-qamar/devsetups/refs/heads/main/bootstrap.sh?ts=$(date +%s)" | bash -s "main.yml" "localhost," "local" "present" "virtualbox,packer,vagrant"
+wget --header="Cache-Control: no-cache" -qO- "https://raw.githubusercontent.com/arslan-qamar/devsetups/refs/heads/main/bootstrap.sh?ts=$(date +%s)" | bash -s "main.yml" "localhost," "local" "install" "virtualbox,packer,vagrant"
 ```
 
 ## Building the Image

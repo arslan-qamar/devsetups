@@ -11,7 +11,7 @@ This repository provides a streamlined approach to setting up development enviro
 To set up the basic tooling environment, run the following command:
 
 ```bash
-wget --header="Cache-Control: no-cache" -qO- "https://raw.githubusercontent.com/arslan-qamar/devsetups/refs/heads/main/bootstrap.sh?ts=$(date +%s)" | bash -s "main.yml" "localhost," "local" "present" "deps,devbox,docker,githubcli,vscode"
+wget --header="Cache-Control: no-cache" -qO- "https://raw.githubusercontent.com/arslan-qamar/devsetups/refs/heads/main/bootstrap.sh?ts=$(date +%s)" | bash -s "main.yml" "localhost," "local" "install" "deps,devbox,docker,githubcli,vscode"
 ```
 
 ## Repository Structure
