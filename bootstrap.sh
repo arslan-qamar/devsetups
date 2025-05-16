@@ -47,4 +47,4 @@ TAGS="${5:-}"
 
 ansible-playbook -vvv "$PLAYBOOK_FILE" -i "$INVENTORY" --connection="$CONNECTION" --extra-vars "state=$STATE" ${TAGS:+-t="$TAGS"}
 
-echo "[✓] Reboot for the changes to take place."
+echo "[✓] Reboot for complete changes to take place."

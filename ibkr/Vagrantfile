@@ -8,10 +8,12 @@ load File.expand_path("../ubuntu-autoinstall/vagrant-base/Vagrantfile.base", __d
 
 Vagrant.configure("2") do |config|
   config.vm.box = "ubuntu-dev"
+  config.ssh.forward_agent = true
   # Run bootstrap script on first boot
   config.vm.provision "shell", privileged: false, inline: <<-SHELL
     set -e
     echo "Downloading and running bootstrap..."
     wget --header="Cache-Control: no-cache" -qO- "https://raw.githubusercontent.com/arslan-qamar/devsetups/refs/heads/main/bootstrap.sh?ts=$(date +%s)" | bash -s "main.yml" "localhost," "local" "install" "deps,devbox,docker,githubcli,vscode,zsh"
+    git clone git@github.com:arslan-qamar/interactivebrokers2.git
   SHELL
 end
