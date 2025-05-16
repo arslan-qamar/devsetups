@@ -2,7 +2,7 @@
 
 # Step 1: Ask for a password and confirm it
 while true; do
-  read -sp "Enter the password for 'ubuntu': " ubuntu_password
+  read -sp "Enter the password for VM: " ubuntu_password
   printf "\n"
   read -sp "Confirm the password: " password_confirm
   printf "\n"
@@ -38,7 +38,9 @@ public_key=$(cat "${ssh_key_path}.pub")
 # Step 3: Generate the user-data file from the template
 user_data_template="user-data.tpl"
 user_data_file="user-data"
+output_folder="output"
 rm -f "$user_data_file"  # Remove the old user-data file if it exists
+rm -rf "$output_folder"  # Remove the old output folder if it exists
 sed "s|{{ ubuntu_password }}|$hashed_password|g; s|{{ ssh_authorized_key }}|$public_key|g" "$user_data_template" > "$user_data_file"
 
 # Step 4: Run Packer

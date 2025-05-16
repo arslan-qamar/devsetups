@@ -1,7 +1,7 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
-ENV['VAGRANT_CUSTOM_KEY_PATH'] = '../ubuntu-autoinstall/vagrant_custom_key'
+ENV['VAGRANT_CUSTOM_KEY_PATH'] ||= '../ubuntu-autoinstall/vagrant_custom_key'
 
 # Load the base Vagrantfile
 load File.expand_path("../ubuntu-autoinstall/vagrant-base/Vagrantfile.base", __dir__)
@@ -9,9 +9,9 @@ load File.expand_path("../ubuntu-autoinstall/vagrant-base/Vagrantfile.base", __d
 Vagrant.configure("2") do |config|
   config.vm.box = "ubuntu-dev"
   # Run bootstrap script on first boot
-  config.vm.provision "shell", inline: <<-SHELL
+  config.vm.provision "shell", privileged: false, inline: <<-SHELL
     set -e
     echo "Downloading and running bootstrap..."
-    wget --header="Cache-Control: no-cache" -qO- "https://raw.githubusercontent.com/arslan-qamar/devsetups/refs/heads/main/bootstrap.sh?ts=$(date +%s)" | bash -s "main.yml" "localhost," "local" "install" "deps,devbox,docker,githubcli,vscode"
+    wget --header="Cache-Control: no-cache" -qO- "https://raw.githubusercontent.com/arslan-qamar/devsetups/refs/heads/main/bootstrap.sh?ts=$(date +%s)" | bash -s "main.yml" "localhost," "local" "install" "deps,devbox,docker,githubcli,vscode,zsh"
   SHELL
 end

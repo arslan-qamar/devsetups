@@ -7,7 +7,7 @@
 
 - name: Set default shell to zsh using chsh
   become: yes
-  shell: chsh -s /usr/bin/zsh 
+  shell: chsh -s /usr/bin/zsh {{ ansible_user_id }}
   args:
     executable: /bin/bash
   when: state == 'present'

@@ -53,11 +53,19 @@ source "virtualbox-iso" "ubuntu" {
   cpus       = var.cpus
   memory     = var.memory
   disk_size  = var.disk_size
+  hard_drive_interface = "pcie"
+  hard_drive_nonrotational = true
+
 
   vboxmanage = [
     ["modifyvm", "{{.Name}}", "--graphicscontroller", "VMSVGA"],
     ["modifyvm", "{{.Name}}", "--firmware", "efi"],
-    ["modifyvm", "{{.Name}}", "--vram", "128"]
+    ["modifyvm", "{{.Name}}", "--chipset", "ich9"],
+    ["modifyvm", "{{.Name}}", "--vram", "128"],
+    ["modifyvm", "{{.Name}}", "--accelerate-3d", "on"],
+    ["modifyvm", "{{.Name}}", "--nested-paging", "on"],
+    ["modifyvm", "{{.Name}}", "--nested-hw-virt", "on"],
+    ["modifyvm", "{{.Name}}", "--hwvirtex", "on"],
   ]
 
   boot_wait  = "10s"
