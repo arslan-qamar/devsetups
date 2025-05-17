@@ -2,18 +2,39 @@
 # vi: set ft=ruby :
 
 ENV['VAGRANT_CUSTOM_KEY_PATH'] ||= '../ubuntu-autoinstall/vagrant_custom_key'
+# Resolve the custom key path on the host and define a temporary path in the VM
+host_ssh_key = "/tmp/id_ed25519"
 
 # Load the base Vagrantfile
 load File.expand_path("../ubuntu-autoinstall/vagrant-base/Vagrantfile.base", __dir__)
 
 Vagrant.configure("2") do |config|
-  config.vm.box = "ubuntu-dev"
-  config.ssh.forward_agent = true
+  config.vm.box = "ubuntu-dev" 
+
+  # Copy the custom SSH key from host to a temporary location in the VM
+  config.vm.provision "file", source: '~/.ssh/id_ed25519', destination: host_ssh_key
+
   # Run bootstrap script on first boot
   config.vm.provision "shell", privileged: false, inline: <<-SHELL
     set -e
     echo "Downloading and running bootstrap..."
     wget --header="Cache-Control: no-cache" -qO- "https://raw.githubusercontent.com/arslan-qamar/devsetups/refs/heads/main/bootstrap.sh?ts=$(date +%s)" | bash -s "main.yml" "localhost," "local" "install" "deps,devbox,docker,githubcli,vscode,zsh"
-    git clone git@github.com:arslan-qamar/interactivebrokers2.git
+
+    # Move the custom key to ~/.ssh/id_ed25519 and set permissions
+    echo "Setting up Host SSH key for git clone..."
+    
+    if [ -f "#{host_ssh_key}" ]; then
+      mv "#{host_ssh_key}" ~/.ssh/id_ed25519            
+      GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=no" git clone git@github.com:arslan-qamar/interactivebrokers2.git
+    else
+      echo "SSH key file not found at #{host_ssh_key}, skipping SSH key setup."
+    fi
+    
+    
+
   SHELL
+
+   # Copy host timezone file to a temporary location in the VM
+   config.vm.provision "file", source: "/usr/share/virtualbox/VBoxGuestAdditions.iso", destination: "/tmp/VBoxGuestAdditions.iso"
+
 end
