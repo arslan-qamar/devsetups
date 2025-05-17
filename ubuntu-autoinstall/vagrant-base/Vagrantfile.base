@@ -37,13 +37,16 @@ Vagrant.configure("2") do |config|
 
   config.vm.provision "shell", inline: <<-SHELL
     set -e
-    echo "Extracting VirtualBox Guest Additions ISO..."
-    mkdir -p /tmp/vboxguest
-    7z x /tmp/VBoxGuestAdditions.iso -o/tmp/vboxguest
-
-    echo "Installing VirtualBox Guest Additions..."
-    sudo sh /tmp/vboxguest/VBoxLinuxAdditions.run || true
-
+    echo "Checking if VirtualBox Guest Additions are already installed..."
+    if ! pgrep -f "VBoxService" > /dev/null && ! lsmod | grep -q vboxguest; then
+      echo "Extracting VirtualBox Guest Additions ISO..."
+      mkdir -p /tmp/vboxguest
+      7z x /tmp/VBoxGuestAdditions.iso -o/tmp/vboxguest
+      echo "Installing VirtualBox Guest Additions..."
+      sudo sh /tmp/vboxguest/VBoxLinuxAdditions.run || true
+    else
+      echo "VirtualBox Guest Additions already installed. Skipping installation."
+    fi
     echo "Cleaning up..."
     rm -rf /tmp/vboxguest /tmp/VBoxGuestAdditions.iso
   SHELL
