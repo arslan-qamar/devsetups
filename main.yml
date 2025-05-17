@@ -28,3 +28,6 @@
  
     - role: zsh
       tags: zsh
+    
+    - role: dotnet
+      tags: dotnet

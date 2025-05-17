@@ -47,4 +47,6 @@ TAGS="${5:-}"
 
 ansible-playbook -vvv "$PLAYBOOK_FILE" -i "$INVENTORY" --connection="$CONNECTION" --extra-vars "state=$STATE" ${TAGS:+-t="$TAGS"}
 
+# ansible-playbook -vvv "main.yml" -i "localhost" --connection="local" --extra-vars "state=present" -t="dotnet"
+
 echo "[✓] Reboot for complete changes to take place."
