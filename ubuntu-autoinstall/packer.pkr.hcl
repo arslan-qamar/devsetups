@@ -29,12 +29,12 @@ variable "cpus" {
 
 variable "memory" {
   type    = number
-  default = 16384 # 16GB
+  default = 8196 # 8GB
 }
 
 variable "disk_size" {
   type    = number
-  default = 150240 # 150GB
+  default = 50240 # 50GB
 }
 
 source "virtualbox-iso" "ubuntu" {
@@ -66,6 +66,11 @@ source "virtualbox-iso" "ubuntu" {
     ["modifyvm", "{{.Name}}", "--nested-paging", "on"],
     ["modifyvm", "{{.Name}}", "--nested-hw-virt", "on"],
     ["modifyvm", "{{.Name}}", "--hwvirtex", "on"],
+    ["modifyvm", "{{.Name}}", "--clipboard-mode", "bidirectional"],
+    ["modifyvm", "{{.Name}}", "--audio", "alsa"],
+    ["modifyvm", "{{.Name}}", "--audiocontroller", "ac97"],
+    ["modifyvm", "{{.Name}}", "--accelerate3d", "on"],
+    ["modifyvm", "{{.Name}}", "--audioout", "on"]
   ]
 
   boot_wait  = "10s"

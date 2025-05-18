@@ -23,43 +23,55 @@ Vagrant.configure("2") do |config|
     sudo ln -sf /usr/share/zoneinfo/$(cat /etc/timezone) /etc/localtime
     sudo dpkg-reconfigure -f noninteractive tzdata
   SHELL
-  
-  # Copy host timezone file to a temporary location in the VM
+
+  # Move Guest Additions installation to the end
   config.vm.provision "file", source: "/usr/share/virtualbox/VBoxGuestAdditions.iso", destination: "/tmp/VBoxGuestAdditions.iso"
-
-  # Add a shell provisioner to install VirtualBox Guest Additions
-  config.vm.provision "shell", inline: <<-SHELL
+  
+  config.vm.provision "shell", name: "virtualbox_guest_additions", inline: <<-SHELL
     set -e
-    echo "Installing required tools..."
+    echo "Installing required tools for Guest Additions..."
     sudo apt-get update
-    sudo apt-get install -y build-essential dkms linux-headers-$(uname -r) p7zip-full
-  SHELL
+    sudo apt-get install -y build-essential dkms linux-headers-$(uname -r) p7zip-full \
+      virtualbox-guest-x11 virtualbox-guest-utils
 
-  config.vm.provision "shell", inline: <<-SHELL
-    set -e
-    echo "Checking if VirtualBox Guest Additions are already installed..."
-    if ! pgrep -f "VBoxService" > /dev/null && ! lsmod | grep -q vboxguest; then
-      echo "Extracting VirtualBox Guest Additions ISO..."
+    echo "Checking if VirtualBox Guest Additions are properly installed..."
+    if ! modinfo vboxguest >/dev/null 2>&1 || ! VBoxService --version >/dev/null 2>&1; then
+      echo "VirtualBox Guest Additions not found or not working properly. Installing..."
       mkdir -p /tmp/vboxguest
-      7z x /tmp/VBoxGuestAdditions.iso -o/tmp/vboxguest
+      7z x /tmp/VBoxGuestAdditions.iso -o/tmp/vboxguest || {
+        echo "Failed to extract VBoxGuestAdditions.iso"
+        rm -rf /tmp/vboxguest /tmp/VBoxGuestAdditions.iso
+        exit 1
+      }
+      
       echo "Installing VirtualBox Guest Additions..."
       sudo sh /tmp/vboxguest/VBoxLinuxAdditions.run || true
+      
+      if ! modinfo vboxguest >/dev/null 2>&1; then
+        echo "Installation failed! VirtualBox Guest Additions kernel module not loaded."
+        rm -rf /tmp/vboxguest /tmp/VBoxGuestAdditions.iso
+        exit 1
+      fi
+      
+      # Ensure X11 services are properly configured
+      sudo VBoxClient --checkhostversion
+      sudo VBoxClient --vmsvga
+      sudo VBoxClient --clipboard
+      sudo VBoxClient --draganddrop
+      sudo VBoxClient --seamless
+      
+      # Restart display manager
+      if command -v systemctl >/dev/null 2>&1; then
+        sudo systemctl restart display-manager || true
+      fi
+      
+      echo "NOTE: You may need to reload the VM for Guest Additions to work properly"
     else
-      echo "VirtualBox Guest Additions already installed. Skipping installation."
+      echo "VirtualBox Guest Additions are properly installed and running."
     fi
+    
     echo "Cleaning up..."
     rm -rf /tmp/vboxguest /tmp/VBoxGuestAdditions.iso
   SHELL
-
-  # Add VirtualBox-specific customizations
-  config.vm.provider "virtualbox" do |vb|
-    vb.gui = true
-    vb.memory = "8192"
-    vb.customize ["modifyvm", :id, "--clipboard-mode", "bidirectional"]
-    vb.customize ["modifyvm", :id, "--audio", "alsa"]
-    vb.customize ["modifyvm", :id, "--audiocontroller", "ac97"]
-    vb.customize ["modifyvm", :id, "--accelerate3d", "on"]
-    vb.customize ["modifyvm", :id, "--audioout", "on"]
-  end
 
 end
