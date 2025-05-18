@@ -24,16 +24,20 @@ Vagrant.configure("2") do |config|
     sudo dpkg-reconfigure -f noninteractive tzdata
   SHELL
 
-  # Move Guest Additions installation to the end
-  config.vm.provision "file", source: "/usr/share/virtualbox/VBoxGuestAdditions.iso", destination: "/tmp/VBoxGuestAdditions.iso"
-  
-  config.vm.provision "shell", name: "virtualbox_guest_additions", inline: <<-SHELL
-    set -e
-    echo "Installing required tools for Guest Additions..."
-    sudo apt-get update
-    sudo apt-get install -y build-essential dkms linux-headers-$(uname -r) p7zip-full \
-      virtualbox-guest-x11 virtualbox-guest-utils
 
+  # Copy Guest Additions ISO
+  config.vm.provision "file", source: "/usr/share/virtualbox/VBoxGuestAdditions.iso", destination: "/tmp/VBoxGuestAdditions.iso"
+
+  # Add a shell provisioner to install VirtualBox Guest Additions
+  config.vm.provision "shell", inline: <<-SHELL
+    set -e
+    echo "Installing required tools..."
+    sudo apt-get update
+    sudo apt-get install -y build-essential dkms linux-headers-$(uname -r) p7zip-full
+  SHELL
+
+  config.vm.provision "shell", name: "virtualbox_guest_additions", inline: <<-SHELL
+    set -e    
     echo "Checking if VirtualBox Guest Additions are properly installed..."
     if ! modinfo vboxguest >/dev/null 2>&1 || ! VBoxService --version >/dev/null 2>&1; then
       echo "VirtualBox Guest Additions not found or not working properly. Installing..."
@@ -46,29 +50,9 @@ Vagrant.configure("2") do |config|
       
       echo "Installing VirtualBox Guest Additions..."
       sudo sh /tmp/vboxguest/VBoxLinuxAdditions.run || true
-      
-      if ! modinfo vboxguest >/dev/null 2>&1; then
-        echo "Installation failed! VirtualBox Guest Additions kernel module not loaded."
-        rm -rf /tmp/vboxguest /tmp/VBoxGuestAdditions.iso
-        exit 1
-      fi
-      
-      # Ensure X11 services are properly configured
-      sudo VBoxClient --checkhostversion
-      sudo VBoxClient --vmsvga
-      sudo VBoxClient --clipboard
-      sudo VBoxClient --draganddrop
-      sudo VBoxClient --seamless
-      
-      # Restart display manager
-      if command -v systemctl >/dev/null 2>&1; then
-        sudo systemctl restart display-manager || true
-      fi
-      
-      echo "NOTE: You may need to reload the VM for Guest Additions to work properly"
     else
-      echo "VirtualBox Guest Additions are properly installed and running."
-    fi
+      echo "VirtualBox Guest Additions already installed. Skipping installation."
+    fi      
     
     echo "Cleaning up..."
     rm -rf /tmp/vboxguest /tmp/VBoxGuestAdditions.iso
