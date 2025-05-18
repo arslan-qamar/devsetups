@@ -41,7 +41,10 @@ Vagrant.configure("2") do |config|
     fi
     
     git config --global gpg.format ssh
-    git config --global user.signingkey #{ssh_key_pub_dest}    
+    git config --global user.signingkey #{ssh_key_pub_dest}  
+    
+    wget https://download2.interactivebrokers.com/installers/tws/latest-standalone/tws-latest-standalone-linux-x64.sh && chmod +x tws-latest-standalone-linux-x64.sh && ./tws-latest-standalone-linux-x64.sh -q
+
     
   SHELL
   
