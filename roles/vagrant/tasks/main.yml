@@ -1,22 +1,30 @@
-- name: Download and dearmor HashiCorp GPG key
-  shell: |
-    wget -qO- https://apt.releases.hashicorp.com/gpg | gpg --dearmor -o /etc/apt/trusted.gpg.d/hashicorp.gpg
-  args:
-    creates: /etc/apt/trusted.gpg.d/hashicorp.gpg
+- name: Ensure /usr/share/keyrings directory exists
   become: yes
-  when: state == "present"
-  
-- name: Remove HashiCorp GPG key
   file:
-    path: /etc/apt/trusted.gpg.d/hashicorp.gpg
-    state: absent
+    path: /usr/share/keyrings
+    state: directory
+    mode: '0755'
+  when: state == "present"
+
+- name: Download and dearmor HashiCorp GPG key
   become: yes
+  shell: |
+    wget -O- https://apt.releases.hashicorp.com/gpg | gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
+  args:
+    creates: /usr/share/keyrings/hashicorp-archive-keyring.gpg
+  when: state == "present"
+
+- name: Remove HashiCorp GPG key
+  become: yes
+  file:
+    path: /usr/share/keyrings/hashicorp-archive-keyring.gpg
+    state: absent
   when: state == "absent"
 
 - name: Manage HashiCorp apt repository for Vagrant
   become: yes
   apt_repository:
-    repo: "deb [arch=amd64 signed-by=/etc/apt/trusted.gpg.d/hashicorp.gpg] https://apt.releases.hashicorp.com {{ ansible_distribution_release | lower }} main"
+    repo: "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com {{ ansible_distribution_release | lower }} main"
     filename: hashicorp
     state: "{{ state }}"
   

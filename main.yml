@@ -31,3 +31,6 @@
     
     - role: dotnet
       tags: dotnet
+
+    - role: hcp
+      tags: hcp

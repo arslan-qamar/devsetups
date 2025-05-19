@@ -1,3 +1,14 @@
+---
+- name: Ensure required packages are installed
+  become: yes
+  apt:
+    name: 
+      - wget
+      - gpg
+      - coreutils
+    state: "{{ state }}"
+    update_cache: yes
+
 - name: Ensure /usr/share/keyrings directory exists
   become: yes
   file:
@@ -32,17 +43,10 @@
   become: yes
   apt:
     update_cache: yes
-    cache_valid_time: 3600  
+    cache_valid_time: 3600
 
-- name: "{{ 'Remove' if state == 'absent' else 'Setup' }} Packer"
+- name: "{{ 'Remove' if state == 'absent' else 'Install' }} HCP CLI"
   become: yes
   apt:
-    name: packer
+    name: hcp
     state: "{{ state }}"
-
-- name: "{{ 'Remove' if state == 'absent' else 'Setup' }} xorriso for Packer CD ISO generation"
-  become: yes
-  apt:
-    name: xorriso
-    state: "{{ state }}"
-
