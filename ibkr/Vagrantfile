@@ -24,7 +24,7 @@ Vagrant.configure("2") do |config|
   config.vm.provision "shell", privileged: false, inline: <<-SHELL
     set -e
     echo "Downloading and running bootstrap..."
-    wget --header="Cache-Control: no-cache" -qO- "https://raw.githubusercontent.com/arslan-qamar/devsetups/refs/heads/main/bootstrap.sh?ts=$(date +%s)" | bash -s "main.yml" "localhost," "local" "install" "deps,devbox,docker,githubcli,vscode,zsh,dotnet"      
+    wget --header="Cache-Control: no-cache" -qO- "https://raw.githubusercontent.com/arslan-qamar/devsetups/refs/heads/main/bootstrap.sh?ts=$(date +%s)" | bash -s "main.yml" "localhost," "local" "install" "deps,devbox,docker,githubcli,vscode,zsh,dotnet,hcp"      
     
     # Move the custom keys to ~/.ssh and set permissions
     echo "Setting up Host SSH key for git clone..."
@@ -38,10 +38,15 @@ Vagrant.configure("2") do |config|
     
     if [ ! -d "interactivebrokers2" ]; then
       GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=no" git clone git@github.com:arslan-qamar/interactivebrokers2.git
+      cd interactivebrokers2
+      echo 'export ibkr_db_paper='$(hcp vault-secrets secrets open ibkr_db_paper | sed -n 's/^Value: *//p') >> .envrc
+      echo 'export ibkr_db_live='$(hcp vault-secrets secrets open ibkr_db_live | sed -n 's/^Value: *//p') >> .envrc
+      echo 'export ibkr_db_test='$(hcp vault-secrets secrets open ibkr_db_test | sed -n 's/^Value: *//p') >> .envrc
+      echo 'export test_account='$(hcp vault-secrets secrets open test_account | sed -n 's/^Value: *//p') >> .envrc
     fi
     
     git config --global gpg.format ssh
-    git config --global user.signingkey #{ssh_key_pub_dest}  
+    git config --global user.signingkey #{ssh_key_pub_dest}      
     
     wget https://download2.interactivebrokers.com/installers/tws/latest-standalone/tws-latest-standalone-linux-x64.sh && chmod +x tws-latest-standalone-linux-x64.sh && ./tws-latest-standalone-linux-x64.sh -q
 
