@@ -45,6 +45,8 @@ Vagrant.configure("2") do |config|
       echo 'export test_account='$(hcp vault-secrets secrets open test_account | sed -n 's/^Value: *//p') >> .envrc
     fi
     
+    git config --global commit.gpgsign true
+    git config --global tag.gpgSign true
     git config --global gpg.format ssh
     git config --global user.signingkey #{ssh_key_pub_dest}      
     
