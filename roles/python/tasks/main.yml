@@ -1,0 +1,10 @@
+- name: Install Python 3 and venv package
+  become: true
+  apt:  
+    name:    
+      - "{{ python_version }}"
+      - "{{ python_version }}-venv"
+    state: "{{ state }}"
+    update_cache: yes
+    dpkg_options: 'force-confold,force-confdef'
+    lock_timeout: 60

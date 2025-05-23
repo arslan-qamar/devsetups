@@ -4,6 +4,9 @@
   roles:
     - role: deps
       tags: deps
+    
+    - role: python
+      tags: python
 
     - role: devbox
       tags: devbox
