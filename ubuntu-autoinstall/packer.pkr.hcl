@@ -70,7 +70,8 @@ source "virtualbox-iso" "ubuntu" {
     ["modifyvm", "{{.Name}}", "--audio", "alsa"],
     ["modifyvm", "{{.Name}}", "--audiocontroller", "ac97"],
     ["modifyvm", "{{.Name}}", "--accelerate3d", "on"],
-    ["modifyvm", "{{.Name}}", "--audioout", "on"]
+    ["modifyvm", "{{.Name}}", "--audioout", "on"],
+    ["setextradata", "{{.Name}}", "VBoxInternal/Devices/vga/0/Config/VMSVGA10", "0"]
   ]
 
   boot_wait  = "10s"
