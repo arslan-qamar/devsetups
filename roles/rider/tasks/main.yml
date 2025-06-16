@@ -1,0 +1,15 @@
+---
+- name: Install Rider via snap
+  become: true
+  snap:
+    name: rider
+    classic: yes
+    state: present
+  when: state == 'present'
+
+- name: Remove Rider via snap if state=absent
+  become: true
+  snap:
+    name: rider
+    state: absent
+  when: state == 'absent'

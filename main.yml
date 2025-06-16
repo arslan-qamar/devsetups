@@ -37,3 +37,6 @@
 
     - role: hcp
       tags: hcp
+
+    - role: rider
+      tags: rider
