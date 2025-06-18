@@ -26,10 +26,16 @@ Vagrant.configure("2") do |config|
   config.vm.provision "file", source: hcp_creds_dest, destination: hcp_creds_tmp
   
   # Run bootstrap script on first boot
-  config.vm.provision "shell", privileged: false, inline: <<-SHELL
+  config.vm.provision "shell", privileged: false, 
+  env: {
+    "GIT_NAME" => ENV["GIT_NAME"],
+    "GIT_EMAIL" => ENV["GIT_EMAIL"]
+    },
+    inline: <<-SHELL
     set -e
     echo "Downloading and running bootstrap..."
     wget --header="Cache-Control: no-cache" -qO- "https://raw.githubusercontent.com/arslan-qamar/devsetups/refs/heads/main/bootstrap.sh?ts=$(date +%s)" | bash -s "main.yml" "localhost," "local" "install" "python,deps,devbox,docker,githubcli,vscode,zsh,dotnet,hcp,rider"      
+
     
     # Move the custom keys to ~/.ssh and set permissions
     echo "Setting up Host SSH key for git clone..."
@@ -41,61 +47,66 @@ Vagrant.configure("2") do |config|
     else
       echo "SSH key file already found at ~/.ssh/id_ed25519, skipping SSH key setup."
     fi    
-
+    
     if [ ! -f "#{hcp_creds_dest}" ]; then
       echo "Copying Hcp creds for vault access..."    
       mkdir -p #{hcp_creds_folder}
       mv #{hcp_creds_tmp} #{hcp_creds_dest}
     else
       echo "No Hcp vault creds found. .envrc file wont be setup !!!"
-    fi 
-    
-    if [ ! -d "interactivebrokers2" ]; then
-      GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=no" git clone git@github.com:arslan-qamar/interactivebrokers2.git
-      cd interactivebrokers2
-      current_profile=$( hcp profile display --format json | jq -r .Name )
-      if [ $current_profile != "Ibkr" ]; then
-        echo "Activating Ibkr HCP profile..."
-        hcp profile profiles activate Ibkr
-      fi
-      echo 'export IBKR_DB_PAPER='$(hcp vault-secrets secrets open ibkr_db_paper --app Bot --format json | jq -r .static_version.value )'' >> .envrc
-      echo 'export IBKR_DB_PAPER='$(hcp vault-secrets secrets open ibkr_db_live --app Bot --format json | jq -r .static_version.value )'' >> .envrc
-      echo 'export IBKR_DB_PAPER='$(hcp vault-secrets secrets open test_account --app Bot --format json | jq -r .static_version.value )'' >> .envrc
-    fi
-    
-
-    echo "Setting up Git GPG Signing..."
-    
-    current_profile=$( hcp profile display --format json | jq -r .Name )
-    if [ $current_profile != "default" ]; then
-      echo "Activating default HCP profile..."
-      hcp profile profiles activate default 
-    fi
-
-
-    echo "Current working directory: $(pwd)"
-
-    echo "Opening GPG private key from HCP vault..."
-    hcp vault-secrets secrets open privkey --app Git --format json | jq -r .static_version.value > privkey.asc
-
-    echo "Opening GPG passphrase from HCP vault..."
-    gpg --batch --yes --pinentry-mode loopback --passphrase-file <(hcp vault-secrets secrets open passphrase --app Git --format json | jq .static_version.value) --import privkey.asc
-    
-    echo "Importing GPG public key from HCP vault..."
-    GPG_KEY_ID=$(gpg --list-secret-keys --keyid-format=long | awk '/^sec/{print $2}' | cut -d'/' -f2)
-    
-    echo "Setting up GPG signing for Git..."
-    git config --global commit.gpgsign true
-    
-    echo "GPG signing enabled for tags"
-    git config --global tag.gpgSign true
-    
-    echo "Setting GPG format to gpg..."
-    git config --global gpg.format gpg
-    
-    echo "Setting GPG key ID for Git with key: $GPG_KEY_ID..."
-    git config --global user.signingkey $GPG_KEY_ID
-    
+      fi 
+      
+      if [ ! -d "interactivebrokers2" ]; then
+        GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=no" git clone git@github.com:arslan-qamar/interactivebrokers2.git
+        cd interactivebrokers2
+        current_profile=$( hcp profile display --format json | jq -r .Name )
+        if [ $current_profile != "Ibkr" ]; then
+          echo "Activating Ibkr HCP profile..."
+          hcp profile profiles activate Ibkr
+          fi
+          echo 'export IBKR_DB_PAPER='$(hcp vault-secrets secrets open ibkr_db_paper --app Bot --format json | jq -r .static_version.value )'' >> .envrc
+          echo 'export IBKR_DB_PAPER='$(hcp vault-secrets secrets open ibkr_db_live --app Bot --format json | jq -r .static_version.value )'' >> .envrc
+          echo 'export IBKR_DB_PAPER='$(hcp vault-secrets secrets open test_account --app Bot --format json | jq -r .static_version.value )'' >> .envrc
+          fi
+          
+          echo "Setting up Git GPG Signing..."
+          
+          current_profile=$( hcp profile display --format json | jq -r .Name )
+          if [ $current_profile != "default" ]; then
+            echo "Activating default HCP profile..."
+            hcp profile profiles activate default 
+            fi
+            
+            echo "Current working directory: $(pwd)"
+            
+            echo "Opening GPG private key from HCP vault..."
+            hcp vault-secrets secrets open privkey --app Git --format json | jq -r .static_version.value > privkey.asc
+            
+            echo "Opening GPG passphrase from HCP vault..."
+            gpg --batch --yes --pinentry-mode loopback --passphrase-file <(hcp vault-secrets secrets open passphrase --app Git --format json | jq .static_version.value) --import privkey.asc
+            
+            echo "Importing GPG public key from HCP vault..."
+            GPG_KEY_ID=$(gpg --list-secret-keys --keyid-format=long | awk '/^sec/{print $2}' | cut -d'/' -f2)
+            
+            echo "Setting up GPG signing for Git..."
+            git config --global commit.gpgsign true
+            
+            echo "GPG signing enabled for tags"
+            git config --global tag.gpgSign true
+            
+            echo "Setting GPG format to gpg..."
+            git config --global gpg.format gpg
+            
+            echo "Setting GPG key ID for Git with key: $GPG_KEY_ID..."
+            git config --global user.signingkey $GPG_KEY_ID
+            
+            echo "Setting up Git user config from environment variables..."
+            if [ -n "$GIT_NAME" ]; then
+              git config --global user.name "$GIT_NAME"
+            fi
+            if [ -n "$GIT_EMAIL" ]; then
+              git config --global user.email "$GIT_EMAIL"
+            fi
     wget https://download2.interactivebrokers.com/installers/tws/latest-standalone/tws-latest-standalone-linux-x64.sh && chmod +x tws-latest-standalone-linux-x64.sh && ./tws-latest-standalone-linux-x64.sh -q
 
     
