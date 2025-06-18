@@ -29,7 +29,7 @@ Vagrant.configure("2") do |config|
   config.vm.provision "shell", privileged: false, inline: <<-SHELL
     set -e
     echo "Downloading and running bootstrap..."
-    # wget --header="Cache-Control: no-cache" -qO- "https://raw.githubusercontent.com/arslan-qamar/devsetups/refs/heads/main/bootstrap.sh?ts=$(date +%s)" | bash -s "main.yml" "localhost," "local" "install" "python,deps,devbox,docker,githubcli,vscode,zsh,dotnet,hcp,rider"      
+    wget --header="Cache-Control: no-cache" -qO- "https://raw.githubusercontent.com/arslan-qamar/devsetups/refs/heads/main/bootstrap.sh?ts=$(date +%s)" | bash -s "main.yml" "localhost," "local" "install" "python,deps,devbox,docker,githubcli,vscode,zsh,dotnet,hcp,rider"      
     
     # Move the custom keys to ~/.ssh and set permissions
     echo "Setting up Host SSH key for git clone..."
@@ -53,15 +53,48 @@ Vagrant.configure("2") do |config|
     if [ ! -d "interactivebrokers2" ]; then
       GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=no" git clone git@github.com:arslan-qamar/interactivebrokers2.git
       cd interactivebrokers2
-      echo 'export IBKR_DB_PAPER='$(hcp vault-secrets secrets open ibkr_db_paper --app Bot | sed -n 's/^Value: *//p') >> .envrc
-      echo 'export IBKR_DB_LIVE='$(hcp vault-secrets secrets open ibkr_db_live --app Bot | sed -n 's/^Value: *//p') >> .envrc
-      echo 'export TEST_ACCOUNT='$(hcp vault-secrets secrets open test_account --app Bot | sed -n 's/^Value: *//p') >> .envrc
+      current_profile=$( hcp profile display --format json | jq -r .Name )
+      if [ $current_profile != "Ibkr" ]; then
+        echo "Activating Ibkr HCP profile..."
+        hcp profile profiles activate Ibkr
+      fi
+      echo 'export IBKR_DB_PAPER='$(hcp vault-secrets secrets open ibkr_db_paper --app Bot --format json | jq -r .static_version.value )'' >> .envrc
+      echo 'export IBKR_DB_PAPER='$(hcp vault-secrets secrets open ibkr_db_live --app Bot --format json | jq -r .static_version.value )'' >> .envrc
+      echo 'export IBKR_DB_PAPER='$(hcp vault-secrets secrets open test_account --app Bot --format json | jq -r .static_version.value )'' >> .envrc
     fi
     
+
+    echo "Setting up Git GPG Signing..."
+    
+    current_profile=$( hcp profile display --format json | jq -r .Name )
+    if [ $current_profile != "default" ]; then
+      echo "Activating default HCP profile..."
+      hcp profile profiles activate default 
+    fi
+
+
+    echo "Current working directory: $(pwd)"
+
+    echo "Opening GPG private key from HCP vault..."
+    hcp vault-secrets secrets open privkey --app Git --format json | jq -r .static_version.value > privkey.asc
+
+    echo "Opening GPG passphrase from HCP vault..."
+    gpg --batch --yes --pinentry-mode loopback --passphrase-file <(hcp vault-secrets secrets open passphrase --app Git --format json | jq .static_version.value) --import privkey.asc
+    
+    echo "Importing GPG public key from HCP vault..."
+    GPG_KEY_ID=$(gpg --list-secret-keys --keyid-format=long | awk '/^sec/{print $2}' | cut -d'/' -f2)
+    
+    echo "Setting up GPG signing for Git..."
     git config --global commit.gpgsign true
+    
+    echo "GPG signing enabled for tags"
     git config --global tag.gpgSign true
-    git config --global gpg.format ssh
-    git config --global user.signingkey #{ssh_key_pub_dest}      
+    
+    echo "Setting GPG format to gpg..."
+    git config --global gpg.format gpg
+    
+    echo "Setting GPG key ID for Git with key: $GPG_KEY_ID..."
+    git config --global user.signingkey $GPG_KEY_ID
     
     wget https://download2.interactivebrokers.com/installers/tws/latest-standalone/tws-latest-standalone-linux-x64.sh && chmod +x tws-latest-standalone-linux-x64.sh && ./tws-latest-standalone-linux-x64.sh -q
 
