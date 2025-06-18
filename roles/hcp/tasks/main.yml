@@ -35,7 +35,7 @@
 - name: Manage HashiCorp apt repository
   become: yes
   apt_repository:
-    repo: "deb [arch={{ ansible_architecture | default('amd64') }} signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com {{ ansible_distribution_release | lower }} main"
+    repo: "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com {{ ansible_distribution_release | lower }} main"
     filename: hashicorp
     state: "{{ state }}"
 
