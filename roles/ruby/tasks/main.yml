@@ -1,3 +1,5 @@
+
+# filepath: /home/arslan/devsetups/roles/ruby/tasks/main.yml
 ---
 - name: Ensure Ruby is installed
   apt:
@@ -7,6 +9,13 @@
   become: yes
   when: state == 'present'
 
+- name: Ensure Bundler is configured
+  gem:
+    name: bundler
+    state: "{{ state }}"
+    user_install: yes
+
+  when: state == 'present'
 - name: Ensure Ruby is absent
   apt:
     name: ruby
