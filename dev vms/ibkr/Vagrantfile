@@ -1,7 +1,11 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
-ENV['VAGRANT_CUSTOM_KEY_PATH'] ||= '../ubuntu-autoinstall/vagrant_custom_key'
+# Load the base Vagrantfile
+load File.expand_path("../../ubuntu-autoinstall/vagrant-base/VagrantBaseFile", __dir__)
+
+ENV['VAGRANT_CUSTOM_KEY_PATH'] ||= '../../ubuntu-autoinstall/vagrant_custom_key'
+
 # Resolve the custom key path on the host and define a temporary path in the VM
 ssh_key_tmp = "/tmp/id_ed25519"
 ssh_key_pub_tmp = "/tmp/id_ed25519.pub"
@@ -12,10 +16,6 @@ ssh_key_pub_dest = "~/.ssh/id_ed25519.pub"
 hcp_creds_tmp = "/tmp/cred_file.json"
 hcp_creds_folder = "~/.config/hcp/credentials"
 hcp_creds_dest = "~/.config/hcp/credentials/cred_file.json"
-
-
-# Load the base Vagrantfile
-load File.expand_path("../ubuntu-autoinstall/vagrant-base/Vagrantfile.base", __dir__)
 
 Vagrant.configure("2") do |config|
   config.vm.box = "ubuntu-dev" 

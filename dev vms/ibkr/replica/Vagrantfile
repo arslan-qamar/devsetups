@@ -1,7 +1,7 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
-ENV['VAGRANT_CUSTOM_KEY_PATH'] ||= '../../ubuntu-autoinstall/vagrant_custom_key'
+ENV['VAGRANT_CUSTOM_KEY_PATH'] ||= '../../../ubuntu-autoinstall/vagrant_custom_key'
 
 # Load the base Vagrantfile
 load File.expand_path("../Vagrantfile", __dir__)

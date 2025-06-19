@@ -2,7 +2,7 @@
 # vi: set ft=ruby :
 
 # Load the base Vagrantfile
-load File.expand_path("Vagrantfile.base", __dir__)
+load File.expand_path("VagrantBaseFile", __dir__)
 
 Vagrant.configure("2") do |config|
   config.vm.box = "ubuntu-dev"
