@@ -1,6 +1,6 @@
 # Host Setup
 
-To setup host with virtual box, and vagrant run the following command :
+To setup host run the following command :
 ```shell
-wget --header="Cache-Control: no-cache" -qO- "https://raw.githubusercontent.com/arslan-qamar/devsetups/refs/heads/main/bootstrap.sh?ts=$(date +%s)" | bash -s "main.yml" "localhost," "local" "install" "virtualbox,vagrant"
+wget --header="Cache-Control: no-cache" -qO- "https://raw.githubusercontent.com/arslan-qamar/devsetups/refs/heads/main/bootstrap.sh?ts=$(date +%s)" | bash -s "main.yml" "localhost," "local" "install" "deps,zsh,dotnet,githubcli,hcp,packer,python,vagrant,virtualbox,vscode,zsh,docker,rider,"
 ```

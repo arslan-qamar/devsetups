@@ -4,9 +4,6 @@
   roles:
     - role: deps
       tags: deps
-    
-    - role: python
-      tags: python
 
     - role: devbox
       tags: devbox
@@ -34,6 +31,12 @@
     
     - role: dotnet
       tags: dotnet
+
+    - role: python
+      tags: python
+    
+    - role: ruby
+      tags: ruby
 
     - role: hcp
       tags: hcp

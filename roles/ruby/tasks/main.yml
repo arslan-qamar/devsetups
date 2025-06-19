@@ -1,0 +1,16 @@
+---
+- name: Ensure Ruby is installed
+  apt:
+    name: ruby
+    state: "{{ state }}"
+    update_cache: yes
+  become: yes
+  when: state == 'present'
+
+- name: Ensure Ruby is absent
+  apt:
+    name: ruby
+    state: absent
+    purge: yes
+  become: yes
+  when: state == 'absent'

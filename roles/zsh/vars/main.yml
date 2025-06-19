@@ -17,3 +17,4 @@ zsh_plugins:
   - zsh-syntax-highlighting
   - git
   - docker
+  - gem

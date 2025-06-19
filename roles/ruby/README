@@ -1,0 +1,7 @@
+## Install or Remove Ruby with Ansible
+
+To **install** Ruby (requires sudo):
+
+```shell
+ansible-playbook -vvv main.yml -i "localhost" --connection="localhost" --extra-vars "state=present" -t="ruby" -K
+```
