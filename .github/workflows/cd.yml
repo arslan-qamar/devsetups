@@ -1,0 +1,34 @@
+---
+name: Ibkr CD
+
+"on":
+  workflow_run:
+    workflows: ["CI"]
+    types:
+      - completed
+    branches:
+      - main
+
+jobs:
+  build-images:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker images for Paper and Live services
+        run: |
+          echo "Building Docker images for dca-bot-paper and dca-bot-live..."
+          docker compose build dca-bot-paper dca-bot-live
+          echo "Docker images built successfully!"
+
+      - name: List built images
+        run: |
+          echo "Listing Docker images:"
+          docker images | grep -E "(dca-bot-paper|dca-bot-live)" || \
+            echo "Images built but may have different naming convention"
