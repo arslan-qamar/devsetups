@@ -1,0 +1,23 @@
+# Dockerfile for dca-bot-paper service
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Copy requirements if they exist
+COPY requirements.txt* ./
+
+# Install dependencies
+RUN if [ -f requirements.txt ]; then pip install --no-cache-dir -r requirements.txt; fi
+
+# Copy application code
+COPY . .
+
+# Set environment for paper trading
+ENV TRADING_MODE=paper
+ENV ENV=paper
+
+# Expose port (if needed)
+EXPOSE 8000
+
+# Default command
+CMD ["python", "-c", "print('DCA Bot Paper service ready'); import time; time.sleep(3600)"]

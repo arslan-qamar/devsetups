@@ -1,0 +1,23 @@
+# Dockerfile for dca-bot-live service
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Copy requirements if they exist
+COPY requirements.txt* ./
+
+# Install dependencies
+RUN if [ -f requirements.txt ]; then pip install --no-cache-dir -r requirements.txt; fi
+
+# Copy application code
+COPY . .
+
+# Set environment for live trading
+ENV TRADING_MODE=live
+ENV ENV=live
+
+# Expose port (if needed)
+EXPOSE 8001
+
+# Default command
+CMD ["python", "-c", "print('DCA Bot Live service ready'); import time; time.sleep(3600)"]
