@@ -69,12 +69,7 @@ Vagrant.configure("2") do |config|
         GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=no" git clone git@github.com:arslan-qamar/interactivebrokers2.git
         cd interactivebrokers2
   
-        echo "Setting up HCP profile for project IBKR..."
-        hcp profile set project_id $(hcp projects list --format json | jq -r '.[] | select(.name == "IBKR Trading Bot") | .id')
-
-        echo 'export IBKR_DB_PAPER='$(hcp vault-secrets secrets open ibkr_db_paper --app Bot --format json | jq -r .static_version.value )'' >> .envrc
-        echo 'export IBKR_DB_LIVE='$(hcp vault-secrets secrets open ibkr_db_live --app Bot --format json | jq -r .static_version.value )'' >> .envrc
-        echo 'export IBKR_DB_TEST='$(hcp vault-secrets secrets open test_account --app Bot --format json | jq -r .static_version.value )'' >> .envrc
+        ./create-envrc.sh
       fi
     SHELL
 
