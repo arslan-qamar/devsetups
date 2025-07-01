@@ -31,7 +31,7 @@ Vagrant.configure("2") do |config|
     inline: <<-SHELL
       set -e
       echo "Downloading and running bootstrap..."
-      wget --header="Cache-Control: no-cache" -qO- "https://raw.githubusercontent.com/arslan-qamar/devsetups/refs/heads/main/bootstrap.sh?ts=$(date +%s)" | bash -s "main.yml" "localhost," "local" "install" "python,deps,devbox,docker,githubcli,vscode,zsh,dotnet,hcp,rider"
+      wget --header="Cache-Control: no-cache" -qO- "https://raw.githubusercontent.com/arslan-qamar/devsetups/refs/heads/main/bootstrap.sh?ts=$(date +%s)" | bash -s "main.yml" "localhost," "local" "install" "python,deps,devbox,docker,githubcli,vscode,zsh,dotnet,hcp,rider,microk8s"
       #wget --header="Cache-Control: no-cache" -qO- "https://raw.githubusercontent.com/arslan-qamar/devsetups/refs/heads/main/bootstrap.sh?ts=$(date +%s)" | bash -s "main.yml" "localhost," "local" "install" "deps,zsh,githubcli,hcp"
     SHELL
 
