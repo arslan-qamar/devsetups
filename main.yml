@@ -43,3 +43,6 @@
 
     - role: rider
       tags: rider
+
+    - role: microk8s
+      tags: microk8s
