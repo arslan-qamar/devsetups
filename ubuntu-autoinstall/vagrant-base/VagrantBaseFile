@@ -4,6 +4,10 @@
 
 Vagrant.configure("2") do |config|
   config.vm.box = "ubuntu-dev"
+  # Set VM name to the folder name where `vagrant up` is run
+  config.vm.define 'vm'
+  vm_name = File.basename(Dir.pwd)
+  config.vm.hostname = "#{vm_name}-vm"
   config.ssh.username = "ubuntu"  
   config.ssh.private_key_path = [ENV.fetch('VAGRANT_CUSTOM_KEY_PATH', '../vagrant_custom_key')] 
   config.ssh.insert_key = false

@@ -19,10 +19,10 @@ wget --header="Cache-Control: no-cache" -qO- "https://raw.githubusercontent.com/
 To run the Ansible playbook directly against a VM (for example, to configure MicroK8s on a remote host), use:
 
 ```bash
-ansible-playbook -i '192.168.0.*,' -u ubuntu --ssh-common-args="-F $VAGRANT_SSH_CFG " $MAIN_ANSIBLE  --extra-vars "state=present target_hosts=192.168.0.*" -t="microk8s" -K
+ansible-playbook -i '<vm-name.local | 192.168.0.*>,' -u ubuntu --ssh-common-args="-F $VAGRANT_SSH_CFG " $MAIN_ANSIBLE  --extra-vars "state=present target_hosts=<vm-name.local | 192.168.0.*>" -t="microk8s" -K
 ```
 
-Replace `192.168.0.*` with your VM's IP address. This command uses the specified SSH config and runs the playbook with the `microk8s` tag. The `-K` flag will prompt for the sudo password if needed.
+Replace `<vm-name.local | 192.168.0.*>` with your VM's Name or VM's IP address. This command uses the specified SSH config and runs the playbook with the `microk8s` tag. The `-K` flag will prompt for the sudo password if needed.
 
 ## Repository Structure
 - **bootstrap.sh**: Entry point script for setting up the environment.
