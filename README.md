@@ -10,9 +10,19 @@ This repository provides a streamlined approach to setting up development enviro
 ## Quick Start
 To set up the basic tooling environment, run the following command:
 
+
 ```bash
 wget --header="Cache-Control: no-cache" -qO- "https://raw.githubusercontent.com/arslan-qamar/devsetups/refs/heads/main/bootstrap.sh?ts=$(date +%s)" | bash -s "main.yml" "localhost," "local" "install" "deps,devbox,docker,githubcli,vscode"
 ```
+
+## Running Ansible Playbook Against a VM
+To run the Ansible playbook directly against a VM (for example, to configure MicroK8s on a remote host), use:
+
+```bash
+ansible-playbook -i '192.168.0.*,' -u ubuntu --ssh-common-args="-F $VAGRANT_SSH_CFG " $MAIN_ANSIBLE  --extra-vars "state=present target_hosts=192.168.0.*" -t="microk8s" -K
+```
+
+Replace `192.168.0.*` with your VM's IP address. This command uses the specified SSH config and runs the playbook with the `microk8s` tag. The `-K` flag will prompt for the sudo password if needed.
 
 ## Repository Structure
 - **bootstrap.sh**: Entry point script for setting up the environment.

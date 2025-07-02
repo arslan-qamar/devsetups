@@ -18,3 +18,4 @@ zsh_plugins:
   - git
   - docker
   - gem
+  - microk8s
