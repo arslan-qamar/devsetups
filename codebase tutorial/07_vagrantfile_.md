@@ -135,7 +135,7 @@ Vagrant.configure("2") do |config|
       GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=no" git clone git@github.com:arslan-qamar/interactivebrokers2.git
       cd interactivebrokers2
       # Get secrets using hcp (HashiCorp Cloud Platform) secrets
-      echo 'export ibkr_db_paper='$(hcp vault-secrets secrets open ibkr_db_paper | sed -n 's/^Value: *//p') >> .envrc
+      echo 'export IBKR_DB='$(hcp vault-secrets secrets open IBKR_DB | sed -n 's/^Value: *//p') >> .envrc
       # ... (other secrets) ...
     fi
 
