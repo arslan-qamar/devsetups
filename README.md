@@ -39,7 +39,7 @@ Replace `<vm-name.local | 192.168.0.*>` with your VM's Name or VM's IP address. 
 1. **Provisioning**: Vagrant is used to create and manage virtual machines.
 2. **Configuration**: Ansible applies configurations and installs necessary tools.
 
-For a comprehensive understanding of how all components work together, see the [Codebase Tutorial](Codebase%20Tutorial/index.md).
+For a comprehensive understanding of how all components work together, see the [Codebase Tutorial](codebase%20tutorial/index.md).
 
 ## Contributing
 Contributions are welcome! Please fork the repository and submit a pull request for any improvements or additional features.
