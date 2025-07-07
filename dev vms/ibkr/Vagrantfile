@@ -19,7 +19,7 @@ hcp_creds_dest = "~/.config/hcp/credentials/cred_file.json"
 
 Vagrant.configure("2") do |config|
   config.vm.box = "ubuntu-dev" 
-
+  
   # Copy the custom SSH key from host to a temporary location in the VM
   config.vm.provision "file", source: ssh_key_dest, destination: ssh_key_tmp  
   config.vm.provision "file", source: ssh_key_pub_dest, destination: ssh_key_pub_tmp  
@@ -28,13 +28,13 @@ Vagrant.configure("2") do |config|
 
   # 1. Bootstrap install
   config.vm.provision "shell", name: "Bootstrap install", privileged: false,    
-    inline: <<-SHELL
-      set -e
-      echo "Downloading and running bootstrap..."
-      wget --header="Cache-Control: no-cache" -qO- "https://raw.githubusercontent.com/arslan-qamar/devsetups/refs/heads/main/bootstrap.sh?ts=$(date +%s)" | bash -s "main.yml" "localhost," "local" "install" "python,deps,devbox,docker,githubcli,vscode,zsh,dotnet,hcp,rider,microk8s"
-      #wget --header="Cache-Control: no-cache" -qO- "https://raw.githubusercontent.com/arslan-qamar/devsetups/refs/heads/main/bootstrap.sh?ts=$(date +%s)" | bash -s "main.yml" "localhost," "local" "install" "deps,zsh,githubcli,hcp"
-    SHELL
-
+  inline: <<-SHELL
+  set -e
+  echo "Downloading and running bootstrap..."
+  wget --header="Cache-Control: no-cache" -qO- "https://raw.githubusercontent.com/arslan-qamar/devsetups/refs/heads/main/bootstrap.sh?ts=$(date +%s)" | bash -s "main.yml" "localhost," "local" "install" "python,deps,devbox,docker,githubcli,vscode,zsh,dotnet,hcp,rider,microk8s"
+  #wget --header="Cache-Control: no-cache" -qO- "https://raw.githubusercontent.com/arslan-qamar/devsetups/refs/heads/main/bootstrap.sh?ts=$(date +%s)" | bash -s "main.yml" "localhost," "local" "install" "deps,zsh,githubcli,hcp"
+  SHELL
+  
   # 2. SSH key setup
   config.vm.provision "shell", name: "SSH key setup", privileged: false,
     inline: <<-SHELL
@@ -118,7 +118,44 @@ Vagrant.configure("2") do |config|
       fi
     SHELL
   
-  # 7. Validation step
+  # 7. Setup GitHub Actions runner
+    config.vm.provision "shell", name: "Setup Github Actions runner", privileged: false, 
+    inline: <<-SHELL
+      # Install dependencies
+      sudo apt-get update
+      sudo apt-get install -y curl tar unzip
+      
+      # Download runner
+      GH_RUNNER_VERSION="2.325.0"
+      GH_OWNER="arslan-qamar"
+      GH_REPO="interactivebrokers2"
+      
+      hcp profile set project_id $(hcp projects list --format json | jq -r '.[] | select(.name == "IBKR Trading Bot") | .id')
+
+      IBKR_GH_TOKEN=$(hcp vault-secrets secrets open IBKR_GH_TOKEN --app Live --format json | jq -r .static_version.value)
+      
+      GH_TOKEN=$(curl -X POST -H "Authorization: token $IBKR_GH_TOKEN" https://api.github.com/repos/arslan-qamar/interactivebrokers2/actions/runners/registration-token | jq -r .token)
+      
+      mkdir -p actions-runner && cd actions-runner
+      curl -O -L https://github.com/actions/runner/releases/download/v${GH_RUNNER_VERSION}/actions-runner-linux-x64-${GH_RUNNER_VERSION}.tar.gz
+      tar xzf actions-runner-linux-x64-${GH_RUNNER_VERSION}.tar.gz  
+      
+      echo "Setting up GitHub Actions runner..."
+      ./config.sh --unattended \
+        --url https://github.com/$GH_OWNER/$GH_REPO \
+        --token $GH_TOKEN \
+        --name Bots \
+        --labels Ibkr \
+        --work _work
+      
+      echo "Installing GitHub Actions runner service..."
+      sudo ./svc.sh install
+
+      echo "Starting GitHub Actions runner service..."
+      sudo ./svc.sh start
+    SHELL
+
+  # 8. Validation step
   config.vm.provision "shell", name: "Validation", privileged: false,
     inline: <<-SHELL
       set -e
