@@ -47,5 +47,8 @@
     - role: helm
       tags: helm
 
+    - role: doppler
+      tags: doppler
+
     - role: microk8s
       tags: microk8s

@@ -1,0 +1,62 @@
+---
+
+- name: Ensure required packages are installed
+  apt:
+    name:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - gnupg
+    state: present
+    update_cache: yes
+  when: state == "present"
+  become: yes
+
+
+- name: Add Doppler GPG key
+  shell: curl -sLf --retry 3 --tlsv1.2 --proto "=https" 'https://packages.doppler.com/public/cli/gpg.DE2A7741A397C129.key' | gpg --dearmor -o /usr/share/keyrings/doppler-archive-keyring.gpg
+  args:
+    creates: /usr/share/keyrings/doppler-archive-keyring.gpg
+  when: state == "present"
+  become: yes
+
+- name: Remove Doppler GPG key
+  file:
+    path: /usr/share/keyrings/doppler-archive-keyring.gpg
+    state: absent
+  when: state == "absent"
+  become: yes
+  
+
+
+- name: Add Doppler apt repository
+  apt_repository:
+    repo: "deb [signed-by=/usr/share/keyrings/doppler-archive-keyring.gpg] https://packages.doppler.com/public/cli/deb/debian any-version main"
+    filename: doppler-cli
+    state: present
+  when: state == "present"
+  become: yes
+
+- name: Remove Doppler apt repository
+  apt_repository:
+    repo: "deb [signed-by=/usr/share/keyrings/doppler-archive-keyring.gpg] https://packages.doppler.com/public/cli/deb/debian any-version main"
+    filename: doppler-cli
+    state: absent
+  when: state == "absent"
+  become: yes
+
+
+- name: Install Doppler CLI
+  apt:
+    name: doppler
+    state: present
+    update_cache: yes
+  when: state == "present"
+  become: yes
+
+- name: Remove Doppler CLI
+  apt:
+    name: doppler
+    state: absent
+  when: state == "absent"
+  become: yes
