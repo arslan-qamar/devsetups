@@ -1,0 +1,14 @@
+---
+# tasks file for helm
+- name: Ensure Helm is installed
+  ansible.builtin.shell: |
+    curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+  args:
+    creates: /usr/local/bin/helm
+  when: state == 'present'
+
+- name: Ensure Helm is uninstalled
+  ansible.builtin.file:
+    path: /usr/local/bin/helm
+    state: absent
+  when: state == 'absent'

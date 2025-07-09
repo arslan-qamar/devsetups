@@ -1,0 +1,16 @@
+Helm Role
+========
+
+This Ansible role installs or uninstalls Helm (v3) on the target system.
+
+## Variables
+- `state`: Set to `present` to install Helm, or `absent` to uninstall Helm.
+
+## Usage Example
+```yaml
+- hosts: all
+  roles:
+    - role: helm
+      vars:
+        state: present
+```
