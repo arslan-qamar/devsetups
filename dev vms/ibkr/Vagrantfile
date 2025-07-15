@@ -13,29 +13,23 @@ ssh_key_pub_tmp = "/tmp/id_ed25519.pub"
 ssh_key_dest = "~/.ssh/id_ed25519"
 ssh_key_pub_dest = "~/.ssh/id_ed25519.pub"
 
-hcp_creds_tmp = "/tmp/cred_file.json"
-hcp_creds_folder = "~/.config/hcp/credentials"
-hcp_creds_dest = "~/.config/hcp/credentials/cred_file.json"
-
 Vagrant.configure("2") do |config|
   config.vm.box = "ubuntu-dev" 
   
   # Copy the custom SSH key from host to a temporary location in the VM
   config.vm.provision "file", source: ssh_key_dest, destination: ssh_key_tmp  
   config.vm.provision "file", source: ssh_key_pub_dest, destination: ssh_key_pub_tmp  
-  config.vm.provision "file", source: hcp_creds_dest, destination: hcp_creds_tmp
   
-
-  # 1. Bootstrap install
+  # 0. Deps install
   config.vm.provision "shell", name: "Bootstrap install", privileged: false,    
-  inline: <<-SHELL
-  set -e
-  echo "Downloading and running bootstrap..."
-  wget --header="Cache-Control: no-cache" -qO- "https://raw.githubusercontent.com/arslan-qamar/devsetups/refs/heads/main/bootstrap.sh?ts=$(date +%s)" | bash -s "main.yml" "localhost," "local" "install" "python,deps,devbox,docker,githubcli,vscode,zsh,dotnet,hcp,rider,microk8s"
-  #wget --header="Cache-Control: no-cache" -qO- "https://raw.githubusercontent.com/arslan-qamar/devsetups/refs/heads/main/bootstrap.sh?ts=$(date +%s)" | bash -s "main.yml" "localhost," "local" "install" "deps,zsh,githubcli,hcp"
+    inline: <<-SHELL
+    set -e
+    echo "Downloading and running bootstrap..."
+    wget --header="Cache-Control: no-cache" -qO- "https://raw.githubusercontent.com/arslan-qamar/devsetups/refs/heads/main/bootstrap.sh?ts=$(date +%s)" | bash -s "main.yml" "localhost," "local" "install" "doppler,python,deps,docker,githubcli,zsh"
+    #wget --header="Cache-Control: no-cache" -qO- "https://raw.githubusercontent.com/arslan-qamar/devsetups/refs/heads/main/bootstrap.sh?ts=$(date +%s)" | bash -s "main.yml" "localhost," "local" "install" "doppler,python,deps,docker,githubcli,zsh"
   SHELL
-  
-  # 2. SSH key setup
+
+  # 1. SSH key setup
   config.vm.provision "shell", name: "SSH key setup", privileged: false,
     inline: <<-SHELL
       echo "Setting up Host SSH key for git clone..."
@@ -48,48 +42,45 @@ Vagrant.configure("2") do |config|
       fi
     SHELL
 
-  # 3. HCP creds setup
-  config.vm.provision "shell", name: "HCP creds setup", privileged: false,
-    inline: <<-SHELL
-      if [ ! -f "#{hcp_creds_dest}" ]; then
-        echo "Copying Hcp creds for vault access..."
-        mkdir -p #{hcp_creds_folder}
-        mv #{hcp_creds_tmp} #{hcp_creds_dest}
-      else
-        echo "No Hcp vault creds found. .envrc file wont be setup !!!"
-      fi
-    SHELL
-
-  # 4. Git repo clone
-  config.vm.provision "shell", name: "Git repo clone", privileged: false,
-    inline: <<-SHELL
+  # 2. Git repo clone
+  config.vm.provision "shell", name: "Git repo clone", privileged: false,        
+    env: {
+      "DOPPLER_TOKEN_IBKR" => ENV["DOPPLER_TOKEN_IBKR"],      
+    }, 
+    inline: <<-SHELL      
       echo "Git repo clone Current working directory: $(pwd)"
       if [ ! -d "interactivebrokers2" ]; then
         echo "Cloning interactivebrokers2 repository..."
-        GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=no" git clone git@github.com:arslan-qamar/interactivebrokers2.git
-        cd interactivebrokers2
-  
-        ./create-envrc.sh
+        GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=no" git clone git@github.com:arslan-qamar/interactivebrokers2.git        
       fi
     SHELL
 
-  # 5. Git GPG signing setup
+  # 3. envrc setup
+  config.vm.provision "shell", name: "envrc setup", privileged: false,
+    env: {      
+      "DOPPLER_TOKEN_IBKR" => ENV["DOPPLER_TOKEN_IBKR"],
+    },    
+    inline: <<-SHELL
+      echo $DOPPLER_TOKEN_IBKR | doppler configure set token --scope ~/interactivebrokers2
+      cd interactivebrokers2
+      ./create-envrc.sh
+    SHELL
+
+  # 4. Git GPG signing setup
   config.vm.provision "shell", name: "Git GPG signing setup", privileged: false,
     env: {
       "GIT_NAME" => ENV["GIT_NAME"],
-      "GIT_EMAIL" => ENV["GIT_EMAIL"]
+      "GIT_EMAIL" => ENV["GIT_EMAIL"],
+      "DOPPLER_TOKEN_GIT" => ENV["DOPPLER_TOKEN_GIT"],
     },
     inline: <<-SHELL
-      echo "Setting up Git GPG Signing..."
-
-      echo "Setting up HCP profile for project Git Creds..."
-      hcp profile set project_id $(hcp projects list --format json | jq -r '.[] | select(.name == "Git Creds") | .id')
-      
-      echo "Opening GPG private key from HCP vault..."
-      hcp vault-secrets secrets open privkey --app Git --format json | jq -r .static_version.value > privkey.asc
-      echo "Opening GPG passphrase from HCP vault..."
-      gpg --batch --yes --pinentry-mode loopback --passphrase-file <(hcp vault-secrets secrets open passphrase --app Git --format json | jq .static_version.value) --import privkey.asc
-      echo "Importing GPG public key from HCP vault..."
+      echo $DOPPLER_TOKEN_GIT | doppler configure set token --scope /
+      echo "Setting up Git GPG Signing..."      
+      echo "Opening GPG private key..."
+      doppler secrets -p git-creds -c dev_personal --json --raw | jq -r '.PRIVKEY.raw' > privkey.asc
+      echo "Opening GPG passphrase..."
+      gpg --batch --yes --pinentry-mode loopback --passphrase-file <(doppler secrets -p git-creds -c dev_personal --json --raw | jq -r '.PASSPHRASE.raw') --import privkey.asc
+      echo "Importing GPG public key..."
       GPG_KEY_ID=$(gpg --list-secret-keys --keyid-format=long | awk '/^sec/{print $2}' | cut -d'/' -f2)
       echo "Setting up GPG signing for Git..."
       git config --global commit.gpgsign true
@@ -106,6 +97,14 @@ Vagrant.configure("2") do |config|
       fi
     SHELL
 
+  # 5. IDE install
+  config.vm.provision "shell", name: "Bootstrap install", privileged: false,    
+    inline: <<-SHELL
+    set -e
+    echo "Downloading and running bootstrap..."
+    wget --header="Cache-Control: no-cache" -qO- "https://raw.githubusercontent.com/arslan-qamar/devsetups/refs/heads/main/bootstrap.sh?ts=$(date +%s)" | bash -s "main.yml" "localhost," "local" "install" "vscode,dotnet,rider,microk8s"    
+  SHELL
+  
   # 6. TWS installer
   config.vm.provision "shell", name: "TWS installer", privileged: false,
     inline: <<-SHELL
@@ -130,9 +129,7 @@ Vagrant.configure("2") do |config|
       GH_OWNER="arslan-qamar"
       GH_REPO="interactivebrokers2"
       
-      hcp profile set project_id $(hcp projects list --format json | jq -r '.[] | select(.name == "IBKR Trading Bot") | .id')
-
-      IBKR_GH_TOKEN=$(hcp vault-secrets secrets open IBKR_GH_TOKEN --app Live --format json | jq -r .static_version.value)
+      IBKR_GH_TOKEN=$(doppler secrets -p ibkr-trading-bot -c live --json --raw | jq -r '.IBKR_GH_TOKEN.raw')
       
       GH_TOKEN=$(curl -X POST -H "Authorization: token $IBKR_GH_TOKEN" https://api.github.com/repos/arslan-qamar/interactivebrokers2/actions/runners/registration-token | jq -r .token)
       
@@ -164,9 +161,7 @@ Vagrant.configure("2") do |config|
       # SSH key
       [ -f ~/.ssh/id_ed25519 ] || (echo "ERROR: SSH key missing!" && exit 1)
 
-      # HCP creds
-      [ -f ~/.config/hcp/credentials/cred_file.json ] || (echo "ERROR: HCP creds missing!" && exit 1)
-
+    
       # Repo
       [ -d ~/interactivebrokers2 ] || (echo "ERROR: Repo not cloned!" && exit 1)
 

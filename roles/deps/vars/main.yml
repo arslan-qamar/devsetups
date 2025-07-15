@@ -1,4 +1,6 @@
 deps_to_install:
   - curl
   - git
+  - jq
+  - yq
   
