@@ -43,10 +43,7 @@ Vagrant.configure("2") do |config|
     SHELL
 
   # 2. Git repo clone
-  config.vm.provision "shell", name: "Git repo clone", privileged: false,        
-    env: {
-      "DOPPLER_TOKEN_IBKR" => ENV["DOPPLER_TOKEN_IBKR"],      
-    }, 
+  config.vm.provision "shell", name: "Git repo clone", privileged: false,            
     inline: <<-SHELL      
       echo "Git repo clone Current working directory: $(pwd)"
       if [ ! -d "interactivebrokers2" ]; then
@@ -58,11 +55,12 @@ Vagrant.configure("2") do |config|
   # 3. envrc setup
   config.vm.provision "shell", name: "envrc setup", privileged: false,
     env: {      
-      "DOPPLER_TOKEN_IBKR" => ENV["DOPPLER_TOKEN_IBKR"],
+      "DOPPLER_TOKEN_IBKR_TEST" => ENV["DOPPLER_TOKEN_IBKR_TEST"],
     },    
     inline: <<-SHELL
-      echo $DOPPLER_TOKEN_IBKR | doppler configure set token --scope ~/interactivebrokers2
+      echo $DOPPLER_TOKEN_IBKR_TEST | doppler configure set token --scope ~/interactivebrokers2
       cd interactivebrokers2
+      rm -f .envrc || true
       ./create-envrc.sh
     SHELL
 
@@ -97,7 +95,7 @@ Vagrant.configure("2") do |config|
       fi
     SHELL
 
-  # 5. IDE install
+  # 5. Tools install
   config.vm.provision "shell", name: "Bootstrap install", privileged: false,    
     inline: <<-SHELL
     set -e
@@ -119,7 +117,11 @@ Vagrant.configure("2") do |config|
   
   # 7. Setup GitHub Actions runner
     config.vm.provision "shell", name: "Setup Github Actions runner", privileged: false, 
+    env: {      
+      "DOPPLER_TOKEN_IBKR_LIVE" => ENV["DOPPLER_TOKEN_IBKR_LIVE"],
+    },
     inline: <<-SHELL
+      echo $DOPPLER_TOKEN_IBKR_LIVE | doppler configure set token --scope /
       # Install dependencies
       sudo apt-get update
       sudo apt-get install -y curl tar unzip
@@ -141,7 +143,7 @@ Vagrant.configure("2") do |config|
       ./config.sh --unattended \
         --url https://github.com/$GH_OWNER/$GH_REPO \
         --token $GH_TOKEN \
-        --name Bots \
+        --name K8s \
         --labels Ibkr \
         --work _work
       
