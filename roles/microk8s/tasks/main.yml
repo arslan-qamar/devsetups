@@ -1,5 +1,5 @@
 - name: Ensure snapd is installed
-  ansible.builtin.package:
+  package:
     name: snapd
     state: present
   become: true
@@ -20,15 +20,41 @@
   when: state == 'absent'
 
 - name: Ensure user is in microk8s group
-  ansible.builtin.user:
+  user:
     name: "{{ ansible_user_id }}"
     groups: microk8s
     append: yes
   become: true
   when: state == 'present'
 
-- name: Enable microk8s services (dns, storage, ingress)
-  ansible.builtin.command: microk8s enable dns storage ingress registry dashboard istio
+- name: Remove user from microk8s group
+  user:
+    name: "{{ ansible_user_id }}"
+    groups: ""
+    append: no
+    remove: yes
+  become: true
+  when: state == 'absent'
+
+- name: Set list of microk8s services
+  set_fact:
+    microk8s_services:
+      - dns
+      - storage
+      - ingress
+      - registry
+      - dashboard
+
+- name: Enable microk8s services one by one
+  command: microk8s enable {{ item }}
+  loop: "{{ microk8s_services }}"
   become: true
   when: state == 'present'
+  changed_when: false
+
+- name: Disable microk8s services one by one
+  command: microk8s disable {{ item }}
+  loop: "{{ microk8s_services }}"
+  become: true
+  when: state == 'absent'
   changed_when: false
