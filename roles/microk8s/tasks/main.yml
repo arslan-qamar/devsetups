@@ -58,3 +58,18 @@
   become: true
   when: state == 'absent'
   changed_when: false
+
+- name: Ensure kubectl alias is present in ~/.zshrc
+  lineinfile:
+    path: "/home/{{ ansible_user_id }}/.zshrc"
+    line: "alias kubectl='microk8s kubectl'"
+    state: present
+    create: yes
+  when: state == 'present'
+
+- name: Remove kubectl alias from ~/.zshrc
+  lineinfile:
+    path: "/home/{{ ansible_user_id }}/.zshrc"
+    line: "alias kubectl='microk8s kubectl'"
+    state: absent
+  when: state == 'absent'
