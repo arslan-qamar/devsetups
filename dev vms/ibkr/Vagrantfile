@@ -102,6 +102,30 @@ Vagrant.configure("2") do |config|
     echo "Downloading and running bootstrap..."
     wget --header="Cache-Control: no-cache" -qO- "https://raw.githubusercontent.com/arslan-qamar/devsetups/refs/heads/main/bootstrap.sh?ts=$(date +%s)" | bash -s "main.yml" "localhost," "local" "install" "vscode,dotnet,rider,microk8s"    
   SHELL
+
+  # 5b. Doppler Helm repo & operator install
+  config.vm.provision "shell", name: "Doppler Helm Operator Install", privileged: false,
+    env: {      
+      "DOPPLER_TOKEN_IBKR_PAPER" => ENV["DOPPLER_TOKEN_IBKR_PAPER"],
+      "DOPPLER_TOKEN_IBKR_LIVE" => ENV["DOPPLER_TOKEN_IBKR_LIVE"],
+    },
+    inline: <<-SHELL
+      cd ~/interactivebrokers2/Helm
+      microk8s kubectl apply -f 'namespaces.yml'
+      
+      echo "Adding Doppler Helm repo and installing Doppler Kubernetes Operator..."
+      microk8s helm3 repo add doppler https://helm.doppler.com
+      microk8s helm3 repo update
+      microk8s helm3 upgrade --install doppler-operator doppler/doppler-kubernetes-operator --namespace doppler-operator-system
+
+      microk8s kubectl delete -n ibkr-trading-bot-paper secret doppler-service-token --ignore-not-found
+      microk8s kubectl create secret generic doppler-service-token -n ibkr-trading-bot-paper --from-literal=serviceToken=$DOPPLER_TOKEN_IBKR_PAPER
+      
+      microk8s kubectl delete -n ibkr-trading-bot-live secret doppler-service-token --ignore-not-found
+      microk8s kubectl create secret generic doppler-service-token -n ibkr-trading-bot-live --from-literal=serviceToken=$DOPPLER_TOKEN_IBKR_LIVE
+            
+      microk8s kubectl apply -f 'secrets-crd.yml'
+    SHELL
   
   # 6. TWS installer
   config.vm.provision "shell", name: "TWS installer", privileged: false,
