@@ -1,0 +1,32 @@
+- name: Get latest ArgoCD version
+  shell: |
+    curl -L -s https://raw.githubusercontent.com/argoproj/argo-cd/stable/VERSION
+  register: argocd_version
+  changed_when: false
+
+- name: Download ArgoCD binary
+  get_url:
+    url: "https://github.com/argoproj/argo-cd/releases/download/v{{ argocd_version.stdout }}/argocd-linux-amd64"
+    dest: /tmp/argocd-linux-amd64
+    mode: '0555'
+  when: state == 'present'
+
+- name: Install ArgoCD binary
+  command:
+    cmd: install -m 555 /tmp/argocd-linux-amd64 /usr/local/bin/argocd
+  when: state == 'present'
+  become: true
+
+- name: Remove downloaded ArgoCD binary
+  file:
+    path: /tmp/argocd-linux-amd64
+    state: absent
+  when: state == 'present'
+  become: true
+
+- name: Uninstall ArgoCD
+  file:
+    path: /usr/local/bin/argocd
+    state: absent
+  when: state == 'absent'
+  become: true

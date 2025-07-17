@@ -1,16 +1,5 @@
-Helm Role
-========
+## Run the following command to install Helm CLI (Requires SUDO)
 
-This Ansible role installs or uninstalls Helm (v3) on the target system.
-
-## Variables
-- `state`: Set to `present` to install Helm, or `absent` to uninstall Helm.
-
-## Usage Example
-```yaml
-- hosts: all
-  roles:
-    - role: helm
-      vars:
-        state: present
+```shell
+ansible-playbook -vvv main.yml -i "localhost" --connection="localhost" --extra-vars "state=present" -t="helm" -K
 ```

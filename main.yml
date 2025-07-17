@@ -46,6 +46,9 @@
 
     - role: helm
       tags: helm
+    
+    - role: argocd
+      tags: argocd
 
     - role: doppler
       tags: doppler
