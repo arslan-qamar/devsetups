@@ -51,7 +51,6 @@
   file:
     path: /etc/apt/keyrings
     state: directory
-    mode: '0755'
   become: true
   when: state == 'present'
 
@@ -66,7 +65,6 @@
 - name: Set permissions on Kubernetes apt keyring
   file:
     path: /etc/apt/keyrings/kubernetes-apt-keyring.gpg
-    mode: '0644'
   become: true
   when: state == 'present'
 
@@ -81,7 +79,6 @@
 - name: Set permissions on Kubernetes apt sources list
   file:
     path: /etc/apt/sources.list.d/kubernetes.list
-    mode: '0644'
   become: true
   when: state == 'present'
 
