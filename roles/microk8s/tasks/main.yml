@@ -59,17 +59,28 @@
   when: state == 'absent'
   changed_when: false
 
-- name: Ensure kubectl alias is present in ~/.zshrc
-  lineinfile:
-    path: "/home/{{ ansible_user_id }}/.zshrc"
-    line: "alias kubectl='microk8s kubectl'"
-    state: present
-    create: yes
+- name: Ensure ~/.kube directory exists
+  file:
+    path: "/home/{{ ansible_user_id }}/.kube"
+    state: directory
+    mode: '0700'
+  become: true
   when: state == 'present'
 
-- name: Remove kubectl alias from ~/.zshrc
-  lineinfile:
-    path: "/home/{{ ansible_user_id }}/.zshrc"
-    line: "alias kubectl='microk8s kubectl'"
+- name: Copy microk8s kubeconfig to ~/.kube/config
+  copy:
+    src: /var/snap/microk8s/current/credentials/client.config
+    dest: "/home/{{ ansible_user_id }}/.kube/config"
+    owner: "{{ ansible_user_id }}"
+    group: "{{ ansible_user_id }}"
+    mode: '0600'
+    remote_src: yes
+  become: true
+  when: state == 'present'
+
+- name: Remove kubeconfig from ~/.kube/config
+  file:
+    path: "/home/{{ ansible_user_id }}/.kube/config"
     state: absent
+  become: true
   when: state == 'absent'
