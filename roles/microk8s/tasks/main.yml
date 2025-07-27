@@ -64,6 +64,8 @@
     path: "/home/{{ ansible_user_id }}/.kube"
     state: directory
     mode: '0700'
+    owner: "{{ ansible_user_id }}"
+    group: "{{ ansible_user_id }}"
   become: true
   when: state == 'present'
 
@@ -82,5 +84,7 @@
   file:
     path: "/home/{{ ansible_user_id }}/.kube/config"
     state: absent
+    owner: "{{ ansible_user_id }}"
+    group: "{{ ansible_user_id }}"
   become: true
   when: state == 'absent'
