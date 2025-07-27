@@ -25,8 +25,8 @@ Vagrant.configure("2") do |config|
     inline: <<-SHELL
     set -e
     echo "Downloading and running bootstrap..."
-    wget --header="Cache-Control: no-cache" -qO- "https://raw.githubusercontent.com/arslan-qamar/devsetups/refs/heads/main/bootstrap.sh?ts=$(date +%s)" | bash -s "main.yml" "localhost," "local" "install" "doppler,helm,python,deps,docker,githubcli,zsh"
-    #wget --header="Cache-Control: no-cache" -qO- "https://raw.githubusercontent.com/arslan-qamar/devsetups/refs/heads/main/bootstrap.sh?ts=$(date +%s)" | bash -s "main.yml" "localhost," "local" "install" "doppler,helm,python,deps,docker,githubcli,zsh"
+    wget --header="Cache-Control: no-cache" -qO- "https://raw.githubusercontent.com/arslan-qamar/devsetups/refs/heads/main/bootstrap.sh?ts=$(date +%s)" | bash -s "main.yml" "localhost," "local" "install" "doppler,helm,argocd,kubectl,python,deps,docker,githubcli,zsh"
+    #wget --header="Cache-Control: no-cache" -qO- "https://raw.githubusercontent.com/arslan-qamar/devsetups/refs/heads/main/bootstrap.sh?ts=$(date +%s)" | bash -s "main.yml" "localhost," "local" "install" "doppler,helm,argocd,kubectl,python,deps,docker,githubcli,zsh"
   SHELL
 
   # 1. SSH key setup
@@ -55,10 +55,10 @@ Vagrant.configure("2") do |config|
   # 3. envrc setup
   config.vm.provision "shell", name: "envrc setup", privileged: false,
     env: {      
-      "DOPPLER_TOKEN_IBKR_TEST" => ENV["DOPPLER_TOKEN_IBKR_TEST"],
+      "DOPPLER_SERVICE_TOKEN_IBKR_TEST" => ENV["DOPPLER_SERVICE_TOKEN_IBKR_TEST"],
     },    
     inline: <<-SHELL
-      echo $DOPPLER_TOKEN_IBKR_TEST | doppler configure set token --scope ~/interactivebrokers2
+      echo $DOPPLER_SERVICE_TOKEN_IBKR_TEST | doppler configure set token --scope ~/interactivebrokers2
       cd interactivebrokers2
       rm -f .envrc || true
       ./create-envrc.sh
@@ -69,10 +69,10 @@ Vagrant.configure("2") do |config|
     env: {
       "GIT_NAME" => ENV["GIT_NAME"],
       "GIT_EMAIL" => ENV["GIT_EMAIL"],
-      "DOPPLER_TOKEN_GIT" => ENV["DOPPLER_TOKEN_GIT"],
+      "DOPPLER_SERVICE_TOKEN_GIT" => ENV["DOPPLER_SERVICE_TOKEN_GIT"],
     },
     inline: <<-SHELL
-      echo $DOPPLER_TOKEN_GIT | doppler configure set token --scope /
+      echo $DOPPLER_SERVICE_TOKEN_GIT | doppler configure set token --scope /
       echo "Setting up Git GPG Signing..."      
       echo "Opening GPG private key..."
       doppler secrets -p git-creds -c dev_personal --json --raw | jq -r '.PRIVKEY.raw' > privkey.asc
@@ -103,28 +103,64 @@ Vagrant.configure("2") do |config|
     wget --header="Cache-Control: no-cache" -qO- "https://raw.githubusercontent.com/arslan-qamar/devsetups/refs/heads/main/bootstrap.sh?ts=$(date +%s)" | bash -s "main.yml" "localhost," "local" "install" "vscode,dotnet,rider,microk8s"    
   SHELL
 
-  # 5b. Doppler Helm repo & operator install
-  config.vm.provision "shell", name: "Doppler Helm Operator Install", privileged: false,
+  # 5b. Doppler Helm ArgoCD Install
+  config.vm.provision "shell", name: "Doppler Helm ArgoCD Install", privileged: false,
     env: {      
-      "DOPPLER_TOKEN_IBKR_PAPER" => ENV["DOPPLER_TOKEN_IBKR_PAPER"],
-      "DOPPLER_TOKEN_IBKR_LIVE" => ENV["DOPPLER_TOKEN_IBKR_LIVE"],
+      "DOPPLER_SERVICE_TOKEN_IBKR_PAPER" => ENV["DOPPLER_SERVICE_TOKEN_IBKR_PAPER"],
+      "DOPPLER_SERVICE_TOKEN_IBKR_LIVE" => ENV["DOPPLER_SERVICE_TOKEN_IBKR_LIVE"],
     },
     inline: <<-SHELL
       cd ~/interactivebrokers2/Helm
-      microk8s kubectl apply -f 'namespaces.yml'
+      #kubectl delete -f 'namespaces.yaml'
+      kubectl apply -f 'namespaces.yaml'
       
-      echo "Adding Doppler Helm repo and installing Doppler Kubernetes Operator..."
+      echo "Adding Helm repo..."
       microk8s helm3 repo add doppler https://helm.doppler.com
       microk8s helm3 repo update
-      microk8s helm3 upgrade --install doppler-operator doppler/doppler-kubernetes-operator --namespace doppler-operator-system
 
-      microk8s kubectl delete -n ibkr-trading-bot-paper secret doppler-service-token --ignore-not-found
-      microk8s kubectl create secret generic doppler-service-token -n ibkr-trading-bot-paper --from-literal=serviceToken=$DOPPLER_TOKEN_IBKR_PAPER
+      echo "Installing Doppler Helm Operator..."
+      microk8s helm3 upgrade --install doppler-operator doppler/doppler-kubernetes-operator --namespace doppler-operator-system           
+
+      echo "Installing ArgoCD ..."
+      kubectl apply -n argocd -f 'https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml'      
+      kubectl config set-context --current --namespace=argocd      
       
-      microk8s kubectl delete -n ibkr-trading-bot-live secret doppler-service-token --ignore-not-found
-      microk8s kubectl create secret generic doppler-service-token -n ibkr-trading-bot-live --from-literal=serviceToken=$DOPPLER_TOKEN_IBKR_LIVE
-            
-      microk8s kubectl apply -f 'secrets-crd.yml'
+      # Setting up Doppler service token for ArgoCD
+      echo "Setting up Doppler service tokens for Paper and Live..."
+      kubectl delete -n doppler-operator-system secret doppler-service-token-paper --ignore-not-found
+      kubectl create secret generic doppler-service-token-paper -n doppler-operator-system --from-literal=serviceToken=$DOPPLER_SERVICE_TOKEN_IBKR_PAPER
+
+      kubectl delete -n doppler-operator-system secret doppler-service-token-live --ignore-not-found
+      kubectl create secret generic doppler-service-token-live -n doppler-operator-system --from-literal=serviceToken=$DOPPLER_SERVICE_TOKEN_IBKR_LIVE
+
+
+      # --- Add this block to create a GitHub deploy key secret for ArgoCD ---
+      echo "Setting up ArgoCD repo access secret..."
+      if [ ! -s "$HOME/.ssh/id_ed25519" ]; then
+        echo "ERROR: $HOME/.ssh/id_ed25519 does not exist or is empty!"
+        exit 1
+      fi
+
+      # Create the ArgoCD GitHub SSH secret
+      export SSH_PRIVATE_KEY_B64=$(base64 -w0 $HOME/.ssh/id_ed25519)
+      envsubst < argocd-github-ssh.yaml | kubectl apply -f -
+      envsubst < argocd-ibkr-trading-bot-repository.yaml | kubectl apply -f -
+
+       # Create ArgoCD Project
+      kubectl apply -f argocd-ibkr-trading-bot-project.yaml
+
+      # Create ArgoCD App
+      # kubectl apply -f argocd-ibkr-trading-bot-app.yaml    
+
+      # Create ArgoCD App Set
+      kubectl apply -f argocd-ibkr-trading-bot-appset.yaml    
+
+      # Port-forward ArgoCD server
+      # kubectl port-forward svc/argocd-server -n argocd 8080:443 &
+      # kubectl config set-context --current --namespace=argocd
+      
+      # login password is in secret argocd-initial-admin-secret
+      # argocd login --username admin --password "$(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 --decode)" --insecure --grpc-web localhost:8080      
     SHELL
   
   # 6. TWS installer
@@ -142,10 +178,10 @@ Vagrant.configure("2") do |config|
   # 7. Setup GitHub Actions runner
     config.vm.provision "shell", name: "Setup Github Actions runner", privileged: false, 
     env: {      
-      "DOPPLER_TOKEN_IBKR_LIVE" => ENV["DOPPLER_TOKEN_IBKR_LIVE"],
+      "DOPPLER_SERVICE_TOKEN_IBKR_LIVE" => ENV["DOPPLER_SERVICE_TOKEN_IBKR_LIVE"],
     },
     inline: <<-SHELL
-      echo $DOPPLER_TOKEN_IBKR_LIVE | doppler configure set token --scope /
+      echo $DOPPLER_SERVICE_TOKEN_IBKR_LIVE | doppler configure set token --scope /
       # Install dependencies
       sudo apt-get update
       sudo apt-get install -y curl tar unzip
@@ -155,6 +191,9 @@ Vagrant.configure("2") do |config|
       GH_OWNER="arslan-qamar"
       GH_REPO="interactivebrokers2"
       
+      # Repository permissions
+      #   Read access to metadata
+      #   Read and Write access to administration
       IBKR_GH_TOKEN=$(doppler secrets -p ibkr-trading-bot -c live --json --raw | jq -r '.IBKR_GH_TOKEN.raw')
       
       GH_TOKEN=$(curl -X POST -H "Authorization: token $IBKR_GH_TOKEN" https://api.github.com/repos/arslan-qamar/interactivebrokers2/actions/runners/registration-token | jq -r .token)
