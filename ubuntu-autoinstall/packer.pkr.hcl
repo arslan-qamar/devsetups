@@ -62,14 +62,13 @@ source "virtualbox-iso" "ubuntu" {
     ["modifyvm", "{{.Name}}", "--firmware", "efi"],
     ["modifyvm", "{{.Name}}", "--chipset", "ich9"],
     ["modifyvm", "{{.Name}}", "--vram", "128"],
-    ["modifyvm", "{{.Name}}", "--accelerate-3d", "on"],
     ["modifyvm", "{{.Name}}", "--nested-paging", "on"],
     ["modifyvm", "{{.Name}}", "--nested-hw-virt", "on"],
     ["modifyvm", "{{.Name}}", "--hwvirtex", "on"],
     ["modifyvm", "{{.Name}}", "--clipboard-mode", "bidirectional"],
     ["modifyvm", "{{.Name}}", "--audio", "alsa"],
     ["modifyvm", "{{.Name}}", "--audiocontroller", "ac97"],
-    ["modifyvm", "{{.Name}}", "--accelerate3d", "on"],
+    ["modifyvm", "{{.Name}}", "--accelerate3d", "off"],
     ["modifyvm", "{{.Name}}", "--audioout", "on"],    
     ["modifyvm", "{{.Name}}", "--vrde", "off"],]
 
