@@ -26,7 +26,6 @@ Vagrant.configure("2") do |config|
     set -e
     echo "Downloading and running bootstrap..."
     wget --header="Cache-Control: no-cache" -qO- "https://raw.githubusercontent.com/arslan-qamar/devsetups/refs/heads/main/bootstrap.sh?ts=$(date +%s)" | bash -s "main.yml" "localhost," "local" "install" "doppler,helm,argocd,kubectl,python,deps,docker,githubcli,zsh"
-    #wget --header="Cache-Control: no-cache" -qO- "https://raw.githubusercontent.com/arslan-qamar/devsetups/refs/heads/main/bootstrap.sh?ts=$(date +%s)" | bash -s "main.yml" "localhost," "local" "install" "doppler,helm,argocd,kubectl,python,deps,docker,githubcli,zsh"
   SHELL
 
   # 1. SSH key setup
