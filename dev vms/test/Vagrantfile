@@ -20,90 +20,50 @@ Vagrant.configure("2") do |config|
   config.vm.provision "file", source: ssh_key_dest, destination: ssh_key_tmp  
   config.vm.provision "file", source: ssh_key_pub_dest, destination: ssh_key_pub_tmp  
   
-  # 0. Deps install
-  config.vm.provision "shell", name: "Bootstrap install", privileged: false,    
-    inline: <<-SHELL
-    set -e
-    echo "Downloading and running bootstrap..."
-    wget --header="Cache-Control: no-cache" -qO- "https://raw.githubusercontent.com/arslan-qamar/devsetups/refs/heads/main/bootstrap.sh?ts=$(date +%s)" | bash -s "main.yml" "localhost," "local" "install" "doppler,helm,argocd,kubectl,python,deps,docker,githubcli,zsh"
-  SHELL
+  # 01. Install bootstrap
+  config.vm.provision "shell", name: "01_install_bootstrap", privileged: false,
+    path: "../provision_01_install_bootstrap.sh"
 
-  # 1. SSH key setup
-  config.vm.provision "shell", name: "SSH key setup", privileged: false,
-    inline: <<-SHELL
-      echo "Setting up Host SSH key for git clone..."
-      if [ ! -f "#{ssh_key_dest}" ]; then
-        echo "Copying Host SSH key for git clone..."
-        mv #{ssh_key_tmp} #{ssh_key_dest}
-        mv #{ssh_key_pub_tmp} #{ssh_key_pub_dest}
-      else
-        echo "SSH key file already found at ~/.ssh/id_ed25519, skipping SSH key setup."
-      fi
-    SHELL
- 
-  # 2. Git GPG signing setup
-  config.vm.provision "shell", name: "Git GPG signing setup", privileged: false,
+  # 02. Setup SSH key
+  config.vm.provision "shell", name: "02_setup_ssh_key", privileged: false,
+    path: "../provision_02_setup_ssh_key.sh"
+
+  # 04. Configure envrc
+  config.vm.provision "shell", name: "04_configure_envrc", privileged: false,
+    env: {
+      "DOPPLER_SERVICE_TOKEN_IBKR_TEST" => ENV["DOPPLER_SERVICE_TOKEN_IBKR_TEST"],
+    },
+    path: "../provision_04_configure_envrc.sh"
+
+  # 05. Setup git GPG signing
+  config.vm.provision "shell", name: "05_setup_git_gpg_signing", privileged: false,
     env: {
       "GIT_NAME" => ENV["GIT_NAME"],
       "GIT_EMAIL" => ENV["GIT_EMAIL"],
       "DOPPLER_SERVICE_TOKEN_GIT" => ENV["DOPPLER_SERVICE_TOKEN_GIT"],
     },
-    inline: <<-SHELL
-      echo $DOPPLER_SERVICE_TOKEN_GIT | doppler configure set token --scope /
-      echo "Setting up Git GPG Signing..."      
-      echo "Opening GPG private key..."
-      doppler secrets -p git-creds -c dev_personal --json --raw | jq -r '.PRIVKEY.raw' > privkey.asc
-      echo "Opening GPG passphrase..."
-      gpg --batch --yes --pinentry-mode loopback --passphrase-file <(doppler secrets -p git-creds -c dev_personal --json --raw | jq -r '.PASSPHRASE.raw') --import privkey.asc
-      echo "Importing GPG public key..."
-      GPG_KEY_ID=$(gpg --list-secret-keys --keyid-format=long | awk '/^sec/{print $2}' | cut -d'/' -f2)
-      echo "Setting up GPG signing for Git..."
-      git config --global commit.gpgsign true
-      echo "GPG signing enabled for tags"
-      git config --global tag.gpgSign true      
-      echo "Setting GPG key ID for Git with key: $GPG_KEY_ID..."
-      git config --global user.signingkey $GPG_KEY_ID
-      echo "Setting up Git user config from environment variables..."
-      if [ -n "$GIT_NAME" ]; then
-        git config --global user.name "$GIT_NAME"
-      fi
-      if [ -n "$GIT_EMAIL" ]; then
-        git config --global user.email "$GIT_EMAIL"
-      fi
-    SHELL
+    path: "../provision_05_setup_git_gpg_signing.sh"
 
-  # 3. Tools install
-  config.vm.provision "shell", name: "Bootstrap install", privileged: false,    
-    inline: <<-SHELL
-    set -e
-    echo "Downloading and running bootstrap..."
-    wget --header="Cache-Control: no-cache" -qO- "https://raw.githubusercontent.com/arslan-qamar/devsetups/refs/heads/main/bootstrap.sh?ts=$(date +%s)" | bash -s "main.yml" "localhost," "local" "install" "vscode,dotnet,rider,microk8s"    
-  SHELL
+  # 06. Install tools
+  config.vm.provision "shell", name: "06_install_tools", privileged: false,
+    path: "../provision_06_install_tools.sh"
 
-  # 4. Validation step
-  config.vm.provision "shell", name: "Validation", privileged: false,
-    inline: <<-SHELL
-      set -e
-      echo "Validating setup..."
-
-      # SSH key
-      [ -f ~/.ssh/id_ed25519 ] || (echo "ERROR: SSH key missing!" && exit 1)
-
-      # GPG key
-      gpg --list-secret-keys | grep sec || (echo "ERROR: No GPG key found!" && exit 1)
-
-      # Git config
-      git config --global --get user.name || (echo "ERROR: Git user.name not set!" && exit 1)
-      git config --global --get user.email || (echo "ERROR: Git user.email not set!" && exit 1)
-      git config --global --get user.signingkey || (echo "ERROR: Git signingkey not set!" && exit 1)
-
-      echo "All validation checks passed."
-  SHELL
+  # 07. Install Doppler, Helm, ArgoCD
+  config.vm.provision "shell", name: "07_install_doppler_helm_argocd", privileged: false,
+    env: {
+      "DOPPLER_SERVICE_TOKEN_IBKR_PAPER" => ENV["DOPPLER_SERVICE_TOKEN_IBKR_PAPER"],
+      "DOPPLER_SERVICE_TOKEN_IBKR_LIVE" => ENV["DOPPLER_SERVICE_TOKEN_IBKR_LIVE"],
+    },
+    path: "../provision_07_install_doppler_helm_argocd.sh"
+   
+  # 10. Validate setup
+  config.vm.provision "shell", name: "10_validate_setup", privileged: false,
+    path: "../provision_10_validate_setup.sh"
   
   # Add VirtualBox-specific customizations
   config.vm.provider "virtualbox" do |vb|
     vb.gui = true
-    vb.memory = "14576"    
+    vb.memory = "24576"    
   end
   
 end

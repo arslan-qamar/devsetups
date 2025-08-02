@@ -20,212 +20,67 @@ Vagrant.configure("2") do |config|
   config.vm.provision "file", source: ssh_key_dest, destination: ssh_key_tmp  
   config.vm.provision "file", source: ssh_key_pub_dest, destination: ssh_key_pub_tmp  
   
-  # 0. Deps install
-  config.vm.provision "shell", name: "Bootstrap install", privileged: false,    
-    inline: <<-SHELL
-    set -e
-    echo "Downloading and running bootstrap..."
-    wget --header="Cache-Control: no-cache" -qO- "https://raw.githubusercontent.com/arslan-qamar/devsetups/refs/heads/main/bootstrap.sh?ts=$(date +%s)" | bash -s "main.yml" "localhost," "local" "install" "doppler,helm,argocd,kubectl,python,deps,docker,githubcli,zsh"
-  SHELL
+  # 01. Install bootstrap
+  config.vm.provision "shell", name: "01_install_bootstrap", privileged: false,
+    path: "../provision_01_install_bootstrap.sh"
 
-  # 1. SSH key setup
-  config.vm.provision "shell", name: "SSH key setup", privileged: false,
-    inline: <<-SHELL
-      echo "Setting up Host SSH key for git clone..."
-      if [ ! -f "#{ssh_key_dest}" ]; then
-        echo "Copying Host SSH key for git clone..."
-        mv #{ssh_key_tmp} #{ssh_key_dest}
-        mv #{ssh_key_pub_tmp} #{ssh_key_pub_dest}
-      else
-        echo "SSH key file already found at ~/.ssh/id_ed25519, skipping SSH key setup."
-      fi
-    SHELL
+  # 02. Setup SSH key
+  config.vm.provision "shell", name: "02_setup_ssh_key", privileged: false,
+    path: "../provision_02_setup_ssh_key.sh"
 
-  # 2. Git repo clone
-  config.vm.provision "shell", name: "Git repo clone", privileged: false,            
-    inline: <<-SHELL      
-      echo "Git repo clone Current working directory: $(pwd)"
-      if [ ! -d "interactivebrokers2" ]; then
-        echo "Cloning interactivebrokers2 repository..."
-        GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=no" git clone git@github.com:arslan-qamar/interactivebrokers2.git        
-      fi
-    SHELL
+  # 03. Clone git repo
+  config.vm.provision "shell", name: "03_clone_git_repo", privileged: false,
+    path: "../provision_03_clone_git_repo.sh"
 
-  # 3. envrc setup
-  config.vm.provision "shell", name: "envrc setup", privileged: false,
-    env: {      
+  # 04. Configure envrc
+  config.vm.provision "shell", name: "04_configure_envrc", privileged: false,
+    env: {
       "DOPPLER_SERVICE_TOKEN_IBKR_TEST" => ENV["DOPPLER_SERVICE_TOKEN_IBKR_TEST"],
-    },    
-    inline: <<-SHELL
-      echo $DOPPLER_SERVICE_TOKEN_IBKR_TEST | doppler configure set token --scope ~/interactivebrokers2
-      cd interactivebrokers2
-      rm -f .envrc || true
-      ./create-envrc.sh
-    SHELL
+    },
+    path: "../provision_04_configure_envrc.sh"
 
-  # 4. Git GPG signing setup
-  config.vm.provision "shell", name: "Git GPG signing setup", privileged: false,
+  # 05. Setup git GPG signing
+  config.vm.provision "shell", name: "05_setup_git_gpg_signing", privileged: false,
     env: {
       "GIT_NAME" => ENV["GIT_NAME"],
       "GIT_EMAIL" => ENV["GIT_EMAIL"],
       "DOPPLER_SERVICE_TOKEN_GIT" => ENV["DOPPLER_SERVICE_TOKEN_GIT"],
     },
-    inline: <<-SHELL
-      echo $DOPPLER_SERVICE_TOKEN_GIT | doppler configure set token --scope /
-      echo "Setting up Git GPG Signing..."      
-      echo "Opening GPG private key..."
-      doppler secrets -p git-creds -c dev_personal --json --raw | jq -r '.PRIVKEY.raw' > privkey.asc
-      echo "Opening GPG passphrase..."
-      gpg --batch --yes --pinentry-mode loopback --passphrase-file <(doppler secrets -p git-creds -c dev_personal --json --raw | jq -r '.PASSPHRASE.raw') --import privkey.asc
-      echo "Importing GPG public key..."
-      GPG_KEY_ID=$(gpg --list-secret-keys --keyid-format=long | awk '/^sec/{print $2}' | cut -d'/' -f2)
-      echo "Setting up GPG signing for Git..."
-      git config --global commit.gpgsign true
-      echo "GPG signing enabled for tags"
-      git config --global tag.gpgSign true      
-      echo "Setting GPG key ID for Git with key: $GPG_KEY_ID..."
-      git config --global user.signingkey $GPG_KEY_ID
-      echo "Setting up Git user config from environment variables..."
-      if [ -n "$GIT_NAME" ]; then
-        git config --global user.name "$GIT_NAME"
-      fi
-      if [ -n "$GIT_EMAIL" ]; then
-        git config --global user.email "$GIT_EMAIL"
-      fi
-    SHELL
+    path: "../provision_05_setup_git_gpg_signing.sh"
 
-  # 5. Tools install
-  config.vm.provision "shell", name: "Bootstrap install", privileged: false,    
-    inline: <<-SHELL
-    set -e
-    echo "Downloading and running bootstrap..."
-    wget --header="Cache-Control: no-cache" -qO- "https://raw.githubusercontent.com/arslan-qamar/devsetups/refs/heads/main/bootstrap.sh?ts=$(date +%s)" | bash -s "main.yml" "localhost," "local" "install" "vscode,dotnet,rider,microk8s"    
-  SHELL
+  # 06. Install tools
+  config.vm.provision "shell", name: "06_install_tools", privileged: false,
+    path: "../provision_06_install_tools.sh"
 
-  # 5b. Doppler Helm ArgoCD Install
-  config.vm.provision "shell", name: "Doppler Helm ArgoCD Install", privileged: false,
-    env: {      
+  # 07. Install Doppler, Helm, ArgoCD
+  config.vm.provision "shell", name: "07_install_doppler_helm_argocd", privileged: false,
+    env: {
       "DOPPLER_SERVICE_TOKEN_IBKR_PAPER" => ENV["DOPPLER_SERVICE_TOKEN_IBKR_PAPER"],
       "DOPPLER_SERVICE_TOKEN_IBKR_LIVE" => ENV["DOPPLER_SERVICE_TOKEN_IBKR_LIVE"],
     },
-    inline: <<-SHELL
-      cd ~/interactivebrokers2/Helm
-      #kubectl delete -f 'namespaces.yaml'
-      kubectl apply -f 'namespaces.yaml'
-      
-      echo "Adding Helm repo..."
-      microk8s helm3 repo add doppler https://helm.doppler.com
-      microk8s helm3 repo update
-
-      echo "Installing Doppler Helm Operator..."
-      microk8s helm3 upgrade --install doppler-operator doppler/doppler-kubernetes-operator --namespace doppler-operator-system           
-
-      echo "Installing ArgoCD ..."
-      kubectl apply -n argocd -f 'https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml'      
-      kubectl config set-context --current --namespace=argocd      
-      
-      # Setting up Doppler service token for ArgoCD
-      echo "Setting up Doppler service tokens for Paper and Live..."
-      kubectl delete -n doppler-operator-system secret doppler-service-token-paper --ignore-not-found
-      kubectl create secret generic doppler-service-token-paper -n doppler-operator-system --from-literal=serviceToken=$DOPPLER_SERVICE_TOKEN_IBKR_PAPER
-
-      kubectl delete -n doppler-operator-system secret doppler-service-token-live --ignore-not-found
-      kubectl create secret generic doppler-service-token-live -n doppler-operator-system --from-literal=serviceToken=$DOPPLER_SERVICE_TOKEN_IBKR_LIVE
-
-
-      # --- Add this block to create a GitHub deploy key secret for ArgoCD ---
-      echo "Setting up ArgoCD repo access secret..."
-      if [ ! -s "$HOME/.ssh/id_ed25519" ]; then
-        echo "ERROR: $HOME/.ssh/id_ed25519 does not exist or is empty!"
-        exit 1
-      fi
-
-      # Create the ArgoCD GitHub SSH secret
-      export SSH_PRIVATE_KEY_B64=$(base64 -w0 $HOME/.ssh/id_ed25519)
-      envsubst < argocd-github-ssh.yaml | kubectl apply -f -
-      envsubst < argocd-ibkr-trading-bot-repository.yaml | kubectl apply -f -
-
-       # Create ArgoCD Project
-      kubectl apply -f argocd-ibkr-trading-bot-project.yaml
-
-      # Create ArgoCD App
-      # kubectl apply -f argocd-ibkr-trading-bot-app.yaml    
-
-      # Create ArgoCD App Set
-      kubectl apply -f argocd-ibkr-trading-bot-appset.yaml    
-
-      # Port-forward ArgoCD server
-      # kubectl port-forward svc/argocd-server -n argocd 8080:443 &
-      # kubectl config set-context --current --namespace=argocd
-      
-      # login password is in secret argocd-initial-admin-secret
-      # argocd login --username admin --password "$(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 --decode)" --insecure --grpc-web localhost:8080      
-    SHELL
+    path: "../provision_07_install_doppler_helm_argocd.sh"
   
-  # 6. TWS installer
-  config.vm.provision "shell", name: "TWS installer", privileged: false,
-    inline: <<-SHELL
-      if [ ! -d ~/tws ]; then
-        wget https://download2.interactivebrokers.com/installers/tws/latest-standalone/tws-latest-standalone-linux-x64.sh
-        chmod +x tws-latest-standalone-linux-x64.sh
-        ./tws-latest-standalone-linux-x64.sh -q
-      else
-        echo "TWS already installed, skipping."
-      fi
-    SHELL
+  # 08. Install TWS
+  config.vm.provision "shell", name: "08_install_tws", privileged: false,
+    path: "../provision_08_install_tws.sh"
   
-  # 7. Setup GitHub Actions runner
-    config.vm.provision "shell", name: "Setup Github Actions runner", privileged: false, 
-    env: {      
+  # 09. Setup GitHub Actions runner
+  config.vm.provision "shell", name: "09_setup_github_actions_runner", privileged: false,
+    env: {
       "DOPPLER_SERVICE_TOKEN_IBKR_LIVE" => ENV["DOPPLER_SERVICE_TOKEN_IBKR_LIVE"],
     },
-    inline: <<-SHELL
-      echo $DOPPLER_SERVICE_TOKEN_IBKR_LIVE | doppler configure set token --scope /
-      # Install dependencies
-      sudo apt-get update
-      sudo apt-get install -y curl tar unzip
-      
-      # Download runner
-      GH_RUNNER_VERSION="2.325.0"
-      GH_OWNER="arslan-qamar"
-      GH_REPO="interactivebrokers2"
-      
-      # Repository permissions
-      #   Read access to metadata
-      #   Read and Write access to administration
-      IBKR_GH_TOKEN=$(doppler secrets -p ibkr-trading-bot -c live --json --raw | jq -r '.IBKR_GH_TOKEN.raw')
-      
-      GH_TOKEN=$(curl -X POST -H "Authorization: token $IBKR_GH_TOKEN" https://api.github.com/repos/arslan-qamar/interactivebrokers2/actions/runners/registration-token | jq -r .token)
-      
-      mkdir -p actions-runner && cd actions-runner
-      curl -O -L https://github.com/actions/runner/releases/download/v${GH_RUNNER_VERSION}/actions-runner-linux-x64-${GH_RUNNER_VERSION}.tar.gz
-      tar xzf actions-runner-linux-x64-${GH_RUNNER_VERSION}.tar.gz  
-      
-      echo "Setting up GitHub Actions runner..."
-      ./config.sh --unattended \
-        --url https://github.com/$GH_OWNER/$GH_REPO \
-        --token $GH_TOKEN \
-        --name K8s \
-        --labels Ibkr \
-        --work _work
-      
-      echo "Installing GitHub Actions runner service..."
-      sudo ./svc.sh install
+    path: "../provision_09_setup_github_actions_runner.sh"
 
-      echo "Starting GitHub Actions runner service..."
-      sudo ./svc.sh start
-    SHELL
-
-  # 8. Validation step
-  config.vm.provision "shell", name: "Validation", privileged: false,
+  # 10. Validate setup
+  config.vm.provision "shell", name: "10_validate_setup", privileged: false,
+    path: "../provision_10_validate_setup.sh"
+  
+  # 8. IBKR Validation step
+  config.vm.provision "shell", name: "IBKR Setup Validation", privileged: false,
     inline: <<-SHELL
       set -e
-      echo "Validating setup..."
+      echo "Validating IBKR setup..."
 
-      # SSH key
-      [ -f ~/.ssh/id_ed25519 ] || (echo "ERROR: SSH key missing!" && exit 1)
-
-    
       # Repo
       [ -d ~/interactivebrokers2 ] || (echo "ERROR: Repo not cloned!" && exit 1)
 
@@ -234,19 +89,12 @@ Vagrant.configure("2") do |config|
       grep -q 'IBKR_DB' ~/interactivebrokers2/.envrc || (echo "ERROR: IBKR_DB not set in .envrc!" && exit 1)
       grep -q 'TEST_ACCOUNT' ~/interactivebrokers2/.envrc || (echo "ERROR: TEST_ACCOUNT not set in .envrc!" && exit 1)
       grep -q 'BOT_ENV' ~/interactivebrokers2/.envrc || (echo "ERROR: BOT_ENV not set in .envrc!" && exit 1)
-      
-      # GPG key
-      gpg --list-secret-keys | grep sec || (echo "ERROR: No GPG key found!" && exit 1)
 
-      # Git config
-      git config --global --get user.name || (echo "ERROR: Git user.name not set!" && exit 1)
-      git config --global --get user.email || (echo "ERROR: Git user.email not set!" && exit 1)
-      git config --global --get user.signingkey || (echo "ERROR: Git signingkey not set!" && exit 1)
 
       # TWS install (check for directory or binary)
       [ -d ~/tws ] || [ -f ~/tws-latest-standalone-linux-x64.sh ] || (echo "ERROR: TWS not installed!" && exit 1)
 
-      echo "All validation checks passed."
+      echo "All IBKR validation checks passed."
     SHELL
   
   # Add VirtualBox-specific customizations
