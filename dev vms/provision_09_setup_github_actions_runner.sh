@@ -24,7 +24,7 @@ echo "Setting up GitHub Actions runner..."
 ./config.sh --unattended \
   --url https://github.com/$GH_OWNER/$GH_REPO \
   --token $GH_TOKEN \
-  --name K8s \
+  --name K8s-$RANDOM \
   --labels Ibkr \
   --work _work
 

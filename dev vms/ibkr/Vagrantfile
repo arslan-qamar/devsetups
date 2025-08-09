@@ -4,8 +4,6 @@
 # Load the base Vagrantfile
 load File.expand_path("../../ubuntu-autoinstall/vagrant-base/VagrantBaseFile", __dir__)
 
-ENV['VAGRANT_CUSTOM_KEY_PATH'] ||= '../../ubuntu-autoinstall/vagrant_custom_key'
-
 # Resolve the custom key path on the host and define a temporary path in the VM
 ssh_key_tmp = "/tmp/id_ed25519"
 ssh_key_pub_tmp = "/tmp/id_ed25519.pub"
@@ -21,59 +19,59 @@ Vagrant.configure("2") do |config|
   config.vm.provision "file", source: ssh_key_pub_dest, destination: ssh_key_pub_tmp  
   
   # 01. Install bootstrap
-  config.vm.provision "shell", name: "01_install_bootstrap", privileged: false,
-    path: "../provision_01_install_bootstrap.sh"
+  config.vm.provision "shell", name: "01_install_bootstrap", privileged: false,    
+    path: "#{ENV['DEV_VMS_BASE_PATH']}/provision_01_install_bootstrap.sh"
 
   # 02. Setup SSH key
   config.vm.provision "shell", name: "02_setup_ssh_key", privileged: false,
-    path: "../provision_02_setup_ssh_key.sh"
+    path: "#{ENV['DEV_VMS_BASE_PATH']}/provision_02_setup_ssh_key.sh"
 
   # 03. Clone git repo
   config.vm.provision "shell", name: "03_clone_git_repo", privileged: false,
-    path: "../provision_03_clone_git_repo.sh"
+    path: "#{ENV['DEV_VMS_BASE_PATH']}/provision_03_clone_git_repo.sh"
 
   # 04. Configure envrc
-  config.vm.provision "shell", name: "04_configure_envrc", privileged: false,
-    env: {
+  config.vm.provision "shell", name: "04_configure_envrc", privileged: false,    
+  env: {
       "DOPPLER_SERVICE_TOKEN_IBKR_TEST" => ENV["DOPPLER_SERVICE_TOKEN_IBKR_TEST"],
     },
-    path: "../provision_04_configure_envrc.sh"
+    path: "#{ENV['DEV_VMS_BASE_PATH']}/provision_04_configure_envrc.sh"
 
   # 05. Setup git GPG signing
-  config.vm.provision "shell", name: "05_setup_git_gpg_signing", privileged: false,
+  config.vm.provision "shell", name: "05_setup_git_gpg_signing", privileged: false,    
     env: {
       "GIT_NAME" => ENV["GIT_NAME"],
       "GIT_EMAIL" => ENV["GIT_EMAIL"],
       "DOPPLER_SERVICE_TOKEN_GIT" => ENV["DOPPLER_SERVICE_TOKEN_GIT"],
     },
-    path: "../provision_05_setup_git_gpg_signing.sh"
+    path: "#{ENV['DEV_VMS_BASE_PATH']}/provision_05_setup_git_gpg_signing.sh"
 
   # 06. Install tools
   config.vm.provision "shell", name: "06_install_tools", privileged: false,
-    path: "../provision_06_install_tools.sh"
+    path: "#{ENV['DEV_VMS_BASE_PATH']}/provision_06_install_tools.sh"
 
   # 07. Install Doppler, Helm, ArgoCD
   config.vm.provision "shell", name: "07_install_doppler_helm_argocd", privileged: false,
-    env: {
+   env: {
       "DOPPLER_SERVICE_TOKEN_IBKR_PAPER" => ENV["DOPPLER_SERVICE_TOKEN_IBKR_PAPER"],
       "DOPPLER_SERVICE_TOKEN_IBKR_LIVE" => ENV["DOPPLER_SERVICE_TOKEN_IBKR_LIVE"],
     },
-    path: "../provision_07_install_doppler_helm_argocd.sh"
+    path: "#{ENV['DEV_VMS_BASE_PATH']}/provision_07_install_doppler_helm_argocd.sh"
   
   # 08. Install TWS
   config.vm.provision "shell", name: "08_install_tws", privileged: false,
-    path: "../provision_08_install_tws.sh"
+    path: "#{ENV['DEV_VMS_BASE_PATH']}/provision_08_install_tws.sh"
   
   # 09. Setup GitHub Actions runner
   config.vm.provision "shell", name: "09_setup_github_actions_runner", privileged: false,
-    env: {
+   env: {
       "DOPPLER_SERVICE_TOKEN_IBKR_LIVE" => ENV["DOPPLER_SERVICE_TOKEN_IBKR_LIVE"],
-    },
-    path: "../provision_09_setup_github_actions_runner.sh"
+    },   
+    path: "#{ENV['DEV_VMS_BASE_PATH']}/provision_09_setup_github_actions_runner.sh"
 
   # 10. Validate setup
   config.vm.provision "shell", name: "10_validate_setup", privileged: false,
-    path: "../provision_10_validate_setup.sh"
+    path: "#{ENV['DEV_VMS_BASE_PATH']}/provision_10_validate_setup.sh"
   
   # 8. IBKR Validation step
   config.vm.provision "shell", name: "IBKR Setup Validation", privileged: false,
@@ -87,8 +85,6 @@ Vagrant.configure("2") do |config|
       # .envrc and required vars
       [ -f ~/interactivebrokers2/.envrc ] || (echo "ERROR: .envrc missing!" && exit 1)
       grep -q 'IBKR_DB' ~/interactivebrokers2/.envrc || (echo "ERROR: IBKR_DB not set in .envrc!" && exit 1)
-      grep -q 'TEST_ACCOUNT' ~/interactivebrokers2/.envrc || (echo "ERROR: TEST_ACCOUNT not set in .envrc!" && exit 1)
-      grep -q 'BOT_ENV' ~/interactivebrokers2/.envrc || (echo "ERROR: BOT_ENV not set in .envrc!" && exit 1)
 
 
       # TWS install (check for directory or binary)

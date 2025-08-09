@@ -9,7 +9,7 @@ Vagrant.configure("2") do |config|
   vm_name = File.basename(Dir.pwd)
   config.vm.hostname = "#{vm_name}-vm"
   config.ssh.username = "ubuntu"  
-  config.ssh.private_key_path = [ENV.fetch('VAGRANT_CUSTOM_KEY_PATH', '../vagrant_custom_key')] 
+  config.ssh.private_key_path = [ENV.fetch('VAGRANT_CUSTOM_KEY_PATH')] 
   config.ssh.insert_key = false
   default_interface = `ip route get 8.8.8.8 | grep -oP 'dev \\K\\S+'`.strip
   config.vm.network "public_network", bridge: default_interface

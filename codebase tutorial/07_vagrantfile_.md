@@ -58,7 +58,7 @@ Vagrant.configure("2") do |config|
   # Configure SSH access to the VM
   config.ssh.username = "ubuntu"
   # Point Vagrant to the private SSH key needed to connect
-  config.ssh.private_key_path = [ENV.fetch('VAGRANT_CUSTOM_KEY_PATH', '../vagrant_custom_key')]
+  config.ssh.private_key_path = [ENV.fetch('VAGRANT_CUSTOM_KEY_PATH')]
   config.ssh.insert_key = false # Don't force Vagrant's default key
 
   # Configure networking - bridge to your host's network interface
