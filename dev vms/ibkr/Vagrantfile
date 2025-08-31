@@ -55,6 +55,7 @@ Vagrant.configure("2") do |config|
    env: {
       "DOPPLER_SERVICE_TOKEN_IBKR_PAPER" => ENV["DOPPLER_SERVICE_TOKEN_IBKR_PAPER"],
       "DOPPLER_SERVICE_TOKEN_IBKR_LIVE" => ENV["DOPPLER_SERVICE_TOKEN_IBKR_LIVE"],
+      "DOPPLER_SERVICE_TOKEN_PROD" => ENV["DOPPLER_SERVICE_TOKEN_PROD"],
     },
     path: "#{ENV['DEV_VMS_BASE_PATH']}/provision_07_install_doppler_helm_argocd.sh"
   

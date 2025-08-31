@@ -1,4 +1,5 @@
 #!/bin/bash
+echo $DOPPLER_SERVICE_TOKEN_PROD | doppler configure set token --scope /
 cd ~/interactivebrokers2/Helm
 #kubectl delete -f 'namespaces.yaml'
 kubectl apply -f 'namespaces.yaml'
@@ -13,6 +14,18 @@ microk8s helm3 upgrade --install doppler-operator doppler/doppler-kubernetes-ope
 echo "Installing ArgoCD ..."
 kubectl apply -n argocd -f 'https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml'
 kubectl config set-context --current --namespace=argocd
+
+kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/notifications_catalog/install.yaml
+
+# Setting up argocd-notifications-secret secret
+echo "Setting up ArgoCD notifications secret..."
+export SLACK_BOT_TOKEN=$(doppler secrets -p git-creds -c prd --json --raw | jq -r '.ARGOCD_SLACK_BOT_TOKEN.raw')
+kubectl delete -n argocd secret argocd-notifications-secret --ignore-not-found
+envsubst < argocd-notifications-slack-token.yaml | kubectl apply -f -
+# kubectl create secret generic argocd-notifications-secret -n argocd \
+#   --from-literal=slack-token="$ARGOCD_SLACK_TOKEN"
+kubectl apply -f argocd-notifications-cm.yaml
+
 
 # Setting up Doppler service token for ArgoCD
 echo "Setting up Doppler service tokens for Paper and Live..."
