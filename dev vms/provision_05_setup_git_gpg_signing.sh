@@ -20,3 +20,5 @@ fi
 if [ -n "$GIT_EMAIL" ]; then
   git config --global user.email "$GIT_EMAIL"
 fi
+git config --global rebase.autostash true
+git config --global merge.autostash true
