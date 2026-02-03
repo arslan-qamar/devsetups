@@ -1,0 +1,55 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+# Load the base Vagrantfile
+load File.expand_path("../../ubuntu-autoinstall/vagrant-base/VagrantBaseFile", __dir__)
+
+ENV['VAGRANT_CUSTOM_KEY_PATH'] ||= '../../ubuntu-autoinstall/vagrant_custom_key'
+
+# Resolve the custom key path on the host and define a temporary path in the VM
+ssh_key_tmp = "/tmp/id_ed25519"
+ssh_key_pub_tmp = "/tmp/id_ed25519.pub"
+
+ssh_key_dest = "~/.ssh/id_ed25519"
+ssh_key_pub_dest = "~/.ssh/id_ed25519.pub"
+
+Vagrant.configure("2") do |config|
+  config.vm.box = "ubuntu-dev" 
+  
+  # Copy the custom SSH key from host to a temporary location in the VM
+  config.vm.provision "file", source: ssh_key_dest, destination: ssh_key_tmp  
+  config.vm.provision "file", source: ssh_key_pub_dest, destination: ssh_key_pub_tmp  
+  
+  # 01. Install bootstrap
+  config.vm.provision "shell", name: "01_install_bootstrap", privileged: false,
+    path: "../provision_01_install_bootstrap.sh"
+
+  # 02. Setup SSH key
+  config.vm.provision "shell", name: "02_setup_ssh_key", privileged: false,
+    path: "../provision_02_setup_ssh_key.sh"
+ 
+
+  # 05. Setup git GPG signing
+  config.vm.provision "shell", name: "05_setup_git_gpg_signing", privileged: false,
+    env: {
+      "GIT_NAME" => ENV["GIT_NAME"],
+      "GIT_EMAIL" => ENV["GIT_EMAIL"],
+      "DOPPLER_SERVICE_TOKEN_GIT" => ENV["DOPPLER_SERVICE_TOKEN_GIT"],
+    },
+    path: "../provision_05_setup_git_gpg_signing.sh"
+
+  # 06. Install tools
+  config.vm.provision "shell", name: "06_install_tools", privileged: false,
+    path: "../provision_06_install_tools.sh"
+   
+  # 10. Validate setup
+  config.vm.provision "shell", name: "10_validate_setup", privileged: false,
+    path: "../provision_10_validate_setup.sh"
+  
+  # Add VirtualBox-specific customizations
+  config.vm.provider "virtualbox" do |vb|
+    vb.gui = true
+    vb.memory = "14576"    
+  end
+  
+end
