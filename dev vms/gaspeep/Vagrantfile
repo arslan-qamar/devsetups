@@ -48,7 +48,7 @@ Vagrant.configure("2") do |config|
   
   # Add libvirt-specific customizations
   config.vm.provider "libvirt" do |libvirt|
-    libvirt.memory = 14576
+    libvirt.memory = 34576
     libvirt.graphics_type = "spice"
     libvirt.video_type = "virtio"
   end
