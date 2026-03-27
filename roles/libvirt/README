@@ -1,0 +1,21 @@
+## Run the following command to install libvirt (Requires SUDO)
+
+```bash
+ansible-playbook -vvv main.yml -i "localhost" --connection="localhost" --extra-vars "state=present" -t="libvirt" -K
+```
+
+## Host Bridge Automation
+
+When `state=present`, this role can  configures a NetworkManager bridge (`br0`) for libvirt host bridging.
+
+Defaults are defined in [roles/libvirt/defaults/main.yml](roles/libvirt/defaults/main.yml):
+
+- `libvirt_configure_host_bridge: true`
+- `libvirt_bridge_name: br0`
+- `libvirt_bridge_uplink_interface` (optional override)
+
+Example override:
+
+```bash
+ansible-playbook -vvv main.yml -i "localhost," --connection="local" --extra-vars "state=present libvirt_configure_host_bridge=true libvirt_bridge_uplink_interface=enp4s0" -t="libvirt" -K
+```

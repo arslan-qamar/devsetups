@@ -79,9 +79,8 @@ Vagrant.configure("2") do |config|
     sudo dpkg-reconfigure -f noninteractive tzdata
   SHELL
 
-  # Provisioner 3 & 4: Install VirtualBox Guest Additions (important for shared folders, performance, etc.)
-  # This involves copying the ISO and running the installer script inside the VM
-  # ... (Guest Additions code omitted for brevity, but shown in original base file) ...
+  # Provider defaults for libvirt/KVM are declared in the base file.
+  # The base file keeps provider-specific guest integration out of provisioning.
 
   # --- PROVISIONING STEPS END HERE ---
 end
@@ -90,13 +89,13 @@ end
 
 Let's break down the key lines within the `Vagrant.configure("2") do |config| ... end` block:
 
-*   `config.vm.box = "ubuntu-dev"`: This is crucial. It tells Vagrant to use the "ubuntu-dev" base image that we built with [Packer](02_packer_.md) and added to Vagrant using `vagrant box add`. If this box isn't available, `vagrant up` will fail.
+*   `config.vm.box = "ubuntu-dev"`: This is crucial. It tells Vagrant to use the "ubuntu-dev" base image that we built with [Packer](02_packer_.md) and added to Vagrant using the generated metadata file. If this box isn't available, `vagrant up` will fail.
 *   `config.ssh....`: These lines configure how Vagrant connects to the VM via SSH. It specifies the default user (`ubuntu`) and tells Vagrant to use the specific SSH key (`vagrant_custom_key`) that was generated during the [Ubuntu Auto-install](06_ubuntu_auto_install__cloud_init__.md) process when the box was built. This ensures Vagrant can log in automatically.
 *   `config.vm.network "public_network", bridge: default_interface`: This sets up networking. `public_network` typically connects the VM to your local network just like your host machine, getting its own IP address. This allows other devices on your network (or the internet, depending on your setup) to potentially reach the VM, and for the VM to access the internet. The `bridge: default_interface` part tells Vagrant which of your computer's network connections to use for this bridge.
 *   `config.vm.provision "shell", ...`: These are **provisioners**. They tell Vagrant to run specific commands or scripts *inside* the VM *after* it has booted.
     *   `"shell"`: Specifies we are running shell commands.
     *   `inline: <<-SHELL ... SHELL`: This is a common Ruby syntax to define a multi-line string. Everything between `<<-SHELL` and the closing `SHELL` is treated as a single script to run inside the VM.
-    *   The shell scripts here perform initial setup like copying the timezone from your host machine and setting it inside the VM, and installing VirtualBox Guest Additions (which improve integration between the host and VM).
+    *   The shell scripts here perform initial setup like copying the timezone from your host machine and setting it inside the VM. Provider-specific VM settings are handled through the libvirt provider block.
 
 Now, let's look at the specific `ibkr/Vagrantfile`:
 
@@ -148,10 +147,11 @@ Vagrant.configure("2") do |config|
 
   SHELL
 
-  # Add VirtualBox-specific customizations for THIS environment
-  config.vm.provider "virtualbox" do |vb|
-    vb.gui = true # Show the VM window
-    vb.memory = "16384" # Override base memory to 16GB for this environment
+  # Add libvirt-specific customizations for THIS environment
+  config.vm.provider "libvirt" do |libvirt|
+    libvirt.memory = 16384 # Override base memory to 16GB for this environment
+    libvirt.graphics_type = "spice"
+    libvirt.video_type = "virtio"
   end
 
 end
@@ -163,7 +163,7 @@ end
     *   `wget ... | bash -s ...`: This is the exact same command we saw in [Chapter 1: Bootstrap Script](01_bootstrap_script_.md). It downloads the script from GitHub and runs it inside the VM.
     *   The arguments passed (`"main.yml"`, `"localhost,"`, etc.) tell the bootstrap script to run the main [Ansible](04_ansible_.md) playbook with specific tags (`deps,devbox,docker,githubcli,vscode,zsh,dotnet,hcp`). This is how all the core `devsetups` tools (Docker, VS Code, .NET, etc.) get installed *inside* the Vagrant VM.
     *   Below the bootstrap command are additional shell commands specific to the `ibkr` environment, like cloning the project code, setting up git, and installing TWS. These run *after* the main `devsetups` Ansible setup is complete.
-*   `config.vm.provider "virtualbox" do |vb| ... end`: This block allows you to configure settings specific to the virtualization provider being used (in this case, VirtualBox). Here, it's used to enable the GUI (`vb.gui = true`) so you can see the VM window and override the default memory set in the base file (`vb.memory = "16384"`).
+*   `config.vm.provider "libvirt" do |libvirt| ... end`: This block allows you to configure settings specific to the virtualization provider being used (in this case, libvirt/KVM). Here, it's used to override the default memory set in the base file and configure SPICE/virtio display options.
 
 So, the `Vagrantfile` acts as a layered configuration. The base file provides common settings and initial setup, and the environment-specific file (like `ibkr/Vagrantfile`) loads the base and adds its own customizations and the core provisioning command that kicks off the main [devsetups setup via the Bootstrap Script](01_bootstrap_script_.md) and [Ansible](04_ansible_.md).
 
@@ -177,7 +177,7 @@ sequenceDiagram
     participant Host as Your Computer
     participant VagrantTool as Vagrant
     participant Vagrantfile as The Vagrantfile
-    participant Provider as VirtualBox / Provider
+    participant Provider as libvirt / Provider
     participant DevVM as The New Dev VM
 
     User->Host: Runs vagrant up command

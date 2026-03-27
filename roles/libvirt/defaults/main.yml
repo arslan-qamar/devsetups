@@ -1,0 +1,5 @@
+---
+libvirt_configure_host_bridge: true
+libvirt_bridge_name: br0
+# Override if auto-detection is wrong (for example: enp4s0)
+# libvirt_bridge_uplink_interface: enp4s0

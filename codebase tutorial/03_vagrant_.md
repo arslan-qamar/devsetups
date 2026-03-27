@@ -23,14 +23,14 @@ In the `devsetups` project, Vagrant is used to spin up virtual machines based on
 
 The typical workflow looks like this:
 
-1.  (One time setup): Use the `ubuntu-autoinstall/bootstrap.sh` script which runs [Packer](02_packer_.md) to build the `ubuntu-dev.box` image and adds it to Vagrant.
+1.  (One time setup): Use the `ubuntu-autoinstall/bootstrap.sh` script which runs [Packer](02_packer_.md) to build the `ubuntu-dev.box` image, generates local metadata for it, and adds it to Vagrant as a versioned box.
 2.  (Per project/environment): Use Vagrant to create and manage a VM based on the `ubuntu-dev` box, applying project-specific configurations.
 
 ## Core Vagrant Concepts
 
 Vagrant revolves around a few key ideas:
 
-*   **Boxes:** These are the base images, like our `ubuntu-dev` box. They are the starting point for any Vagrant environment. You can get boxes from HashiCorp's Vagrant Cloud, build your own with Packer, or use local ones.
+*   **Boxes:** These are the base images, like our `ubuntu-dev` box. They are the starting point for any Vagrant environment. You can get boxes from HashiCorp's Vagrant Cloud, build your own with Packer, or use local ones. In this repo, the local box is registered through a metadata JSON file so it carries a version and checksum.
 *   **Vagrantfile:** This is the central configuration file for a Vagrant environment. It's written in Ruby (but don't worry, you don't need to know Ruby to use it!). It tells Vagrant:
     *   Which **box** to use.
     *   How to configure the **VM** (network, memory, etc.).
@@ -44,7 +44,7 @@ The most common Vagrant command is `vagrant up`. When you run this command in a 
 Let's look at a simple example from the `devsetups` project, using the `ibkr/Vagrantfile`. This `Vagrantfile` is designed to set up an environment specific to working with the Interactive Brokers API.
 
 ```bash
-# First, make sure you have VirtualBox installed
+# First, make sure libvirt, QEMU/KVM, and the Vagrant libvirt plugin are installed
 # and have run the ubuntu-autoinstall/bootstrap.sh
 # script at least once to build and add the ubuntu-dev box.
 
@@ -52,7 +52,7 @@ Let's look at a simple example from the `devsetups` project, using the `ibkr/Vag
 cd ibkr/
 
 # 2. Run the command to start the environment
-vagrant up
+vagrant up --provider=libvirt
 ```
 
 **What happens when you run `vagrant up`?**
@@ -112,16 +112,16 @@ sequenceDiagram
     participant User
     participant HostVM as Your Computer
     participant VagrantTool as Vagrant
-    participant VirtualBox as VirtualBox / Provider
+    participant Libvirt as libvirt / Provider
     participant DevVM as New Dev VM
 
     User->HostVM: Runs vagrant up
     HostVM->VagrantTool: Execute vagrant up
     VagrantTool->HostVM: Reads the Vagrantfile
     VagrantTool->VagrantTool: Checks for required Box (ubuntu-dev)
-    VagrantTool->VirtualBox: Create a new VM instance from the Box
-    VirtualBox->DevVM: Start the Dev VM
-    DevVM-->VirtualBox: VM boots up
+    VagrantTool->Libvirt: Create a new VM instance from the Box
+    Libvirt->DevVM: Start the Dev VM
+    DevVM-->Libvirt: VM boots up
     VagrantTool->DevVM: Establish connection (e.g., SSH)
     VagrantTool->DevVM: Execute provisioning steps defined in Vagrantfile
     Note over DevVM: Runs the shell script provisioner<br/>(which runs bootstrap.sh and Ansible)
@@ -134,7 +134,7 @@ sequenceDiagram
 In summary, when you run `vagrant up`:
 
 1.  Vagrant reads the `Vagrantfile` to understand the desired environment configuration.
-2.  It uses the specified virtualization provider (like VirtualBox, defined in the `Vagrantfile`) to create a new virtual machine based on the chosen "box" (our `ubuntu-dev.box`).
+2.  It uses the specified virtualization provider (like libvirt, defined in the `Vagrantfile`) to create a new virtual machine based on the chosen "box" (our `ubuntu-dev.box`).
 3.  It applies network and resource settings defined in the `Vagrantfile`.
 4.  It boots the new VM.
 5.  Once the VM is running and accessible (usually via SSH), Vagrant executes the "provisioning" instructions listed in the `Vagrantfile`.

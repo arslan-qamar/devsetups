@@ -4,6 +4,7 @@ This repository provides a streamlined approach to setting up development enviro
 
 ## Features
 - Automated provisioning with Vagrant.
+- QEMU/KVM + libvirt as the supported local virtualization stack.
 - Configuration management and tooling setup using Ansible.
 - Pre-configured roles for dependencies, development tools, Docker, GitHub CLI, VS Code, and more.
 

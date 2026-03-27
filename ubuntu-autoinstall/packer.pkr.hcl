@@ -1,8 +1,13 @@
 packer {
   required_plugins {
-    virtualbox = {
-      version = ">= 1.0.4"
-      source  = "github.com/hashicorp/virtualbox"
+    qemu = {
+      version = ">= 1.1.0"
+      source  = "github.com/hashicorp/qemu"
+    }
+
+    vagrant = {
+      version = ">= 1.1.0"
+      source  = "github.com/hashicorp/vagrant"
     }
   }
 }
@@ -37,11 +42,11 @@ variable "disk_size" {
   default = 50240 # 50GB
 }
 
-source "virtualbox-iso" "ubuntu" {
-  guest_os_type    = "Ubuntu_64"
+source "qemu" "ubuntu" {
+  accelerator      = "kvm"
+  vm_name          = var.box_name
   iso_url          = var.iso_url
-  iso_checksum     = var.iso_checksum  
-  keep_registered = true
+  iso_checksum     = var.iso_checksum
 
   shutdown_command = "echo 'packer' | sudo -S shutdown -P now"
 
@@ -50,27 +55,12 @@ source "virtualbox-iso" "ubuntu" {
   ssh_private_key_file = "./vagrant_custom_key"
   ssh_timeout  = "20m"
 
-  cpus       = var.cpus
-  memory     = var.memory
-  disk_size  = var.disk_size
-  hard_drive_interface = "pcie"
-  hard_drive_nonrotational = true
-
-
-  vboxmanage = [
-    ["modifyvm", "{{.Name}}", "--graphicscontroller", "VMSVGA"],
-    ["modifyvm", "{{.Name}}", "--firmware", "efi"],
-    ["modifyvm", "{{.Name}}", "--chipset", "ich9"],
-    ["modifyvm", "{{.Name}}", "--vram", "128"],
-    ["modifyvm", "{{.Name}}", "--nested-paging", "on"],
-    ["modifyvm", "{{.Name}}", "--nested-hw-virt", "on"],
-    ["modifyvm", "{{.Name}}", "--hwvirtex", "on"],
-    ["modifyvm", "{{.Name}}", "--clipboard-mode", "bidirectional"],
-    ["modifyvm", "{{.Name}}", "--audio", "alsa"],
-    ["modifyvm", "{{.Name}}", "--audiocontroller", "ac97"],
-    ["modifyvm", "{{.Name}}", "--accelerate3d", "off"],
-    ["modifyvm", "{{.Name}}", "--audioout", "on"],    
-    ["modifyvm", "{{.Name}}", "--vrde", "off"],]
+  cpus           = var.cpus
+  memory         = var.memory
+  disk_size      = var.disk_size
+  format         = "qcow2"
+  net_device     = "virtio-net"
+  disk_interface = "virtio"
 
   boot_wait  = "10s"
   boot_command = [
@@ -87,9 +77,10 @@ source "virtualbox-iso" "ubuntu" {
 }
 
 build {
-  sources = ["source.virtualbox-iso.ubuntu"]
+  sources = ["source.qemu.ubuntu"]
 
   post-processor "vagrant" {
+    provider_override = "libvirt"
     output = "output/${var.box_name}.box"
   }
 }

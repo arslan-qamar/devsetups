@@ -6,7 +6,7 @@ Imagine you're a baker and you need to make hundreds of identical cookies. You w
 
 ## What is Packer?
 
-**Packer** is like a "cookie cutter" for creating virtual machine images. Its main job is to build **identical machine images** for different platforms (like VirtualBox, VMware, cloud providers like AWS, etc.) from a single instruction file.
+**Packer** is like a "cookie cutter" for creating virtual machine images. Its main job is to build **identical machine images** for different platforms (like QEMU/KVM, VMware, cloud providers like AWS, etc.) from a single instruction file.
 
 In the `devsetups` project, Packer is used to build the base **`ubuntu-dev`** virtual machine image. This is the fundamental operating system setup that [Vagrant](03_vagrant_.md) will later use as the starting point for creating new development environments.
 
@@ -35,13 +35,13 @@ sequenceDiagram
     participant User
     participant HostVM as Your Computer
     participant PackerTool as Packer
-    participant TempVM as Temporary VirtualBox VM
+    participant TempVM as Temporary QEMU VM
 
     User->HostVM: Run Packer build command
     HostVM->PackerTool: Execute packer build ...
     PackerTool->HostVM: Read packer.pkr.hcl template
-    PackerTool->HostVM: Tell VirtualBox to create a VM
-    HostVM->TempVM: Start a new VirtualBox VM
+    PackerTool->HostVM: Tell QEMU/KVM to create a VM
+    HostVM->TempVM: Start a new QEMU/KVM VM
     Note over TempVM: VM boots from the Ubuntu ISO specified in template
     Note over TempVM: VM uses auto-install configuration<br/>(user-data/meta-data, covered in Chapter 6)
     Note over TempVM: Ubuntu OS gets installed automatically
@@ -57,11 +57,11 @@ In essence:
 
 1.  You tell Packer to build using a specific template file.
 2.  Packer reads the template, which tells it:
-    *   Which **platform** to build for (e.g., VirtualBox).
+    *   Which **platform** to build for (e.g., QEMU/KVM).
     *   Which **installer media** to use (e.g., an Ubuntu ISO file).
     *   How to **automate the OS installation** (in `devsetups`, this involves specific boot commands and files like `user-data` for Ubuntu's auto-install feature - more on this in [Chapter 6: Ubuntu Auto-install (Cloud-init)](06_ubuntu_auto_install__cloud_init__.md)).
-    *   How to **package the final image** (e.g., convert the VirtualBox VM into a `.box` file for [Vagrant](03_vagrant_.md)).
-3.  Packer starts a **temporary virtual machine** on your computer using the specified platform (VirtualBox).
+    *   How to **package the final image** (e.g., convert the QEMU/libvirt VM into a `.box` file for [Vagrant](03_vagrant_.md)).
+  3.  Packer starts a **temporary virtual machine** on your computer using the specified platform (QEMU/KVM).
 4.  It guides the temporary VM through the automated OS installation process.
 5.  Once the OS is installed and configured according to the template (including setup via the auto-install files), Packer shuts down the temporary VM.
 6.  Finally, Packer takes the disk image of the temporary VM and packages it into the desired output format (our `.box` file).
@@ -88,9 +88,34 @@ packer build \
   -var "disk_size=$disk_size" \
   packer.pkr.hcl
 
-# Step 5: Add the box to Vagrant
+# Step 5: Generate versioned box metadata
+box_file_path="$(cd "$output_folder" && pwd)/${box_name}.box"
+metadata_file_path="$(cd "$output_folder" && pwd)/${box_name}.json"
+box_checksum=$(sha256sum "$box_file_path" | awk '{print $1}')
+
+cat > "$metadata_file_path" <<EOF
+{
+  "name": "${box_name}",
+  "description": "Local ${box_name} libvirt box built by Packer",
+  "versions": [
+    {
+      "version": "${box_version}",
+      "providers": [
+        {
+          "name": "libvirt",
+          "url": "file://${box_file_path}",
+          "checksum_type": "sha256",
+          "checksum": "${box_checksum}"
+        }
+      ]
+    }
+  ]
+}
+EOF
+
+# Step 6: Add the box to Vagrant
 echo "[+] Adding the built box to Vagrant..."
-vagrant box add --name "$box_name" "output/${box_name}.box" --force
+vagrant box add "$metadata_file_path" --force
 
 # ... (rest of the script) ...
 ```
@@ -100,7 +125,7 @@ When you run `./ubuntu-autoinstall/bootstrap.sh`, this part of the script execut
 *   It runs the command `packer build packer.pkr.hcl`.
 *   It passes some information (like the desired box name, CPU cores, memory, and disk size) to Packer using `-var` flags. These values come from the answers you provide when the script prompts you.
 *   Packer then starts building the image based on the instructions in the `packer.pkr.hcl` file, using the variables provided.
-*   Once Packer successfully builds the `.box` file (which ends up in the `./output` directory), the script automatically adds this newly created box to your local [Vagrant](03_vagrant_.md) environment using `vagrant box add`.
+*   Once Packer successfully builds the `.box` file (which ends up in the `./output` directory), the script generates a local metadata file with a version and checksum, then adds the box to your local [Vagrant](03_vagrant_.md) environment through that metadata.
 
 This means running `./ubuntu-autoinstall/bootstrap.sh` not only *builds* the image using Packer but also makes it immediately available for [Vagrant](03_vagrant_.md) to use.
 
@@ -112,7 +137,7 @@ While we'll dive deeper into this file in [Chapter 5: Packer Template (packer.pk
 
 ```hcl
 packer {
-  # Specifies required plugins (like VirtualBox)
+  # Specifies required plugins (like QEMU)
   # ...
 }
 
@@ -121,10 +146,10 @@ variable "iso_url" {
   # ...
 }
 
-source "virtualbox-iso" "ubuntu" {
+source "qemu" "ubuntu" {
   # This is a 'builder' block
-  # Tells Packer how to start the temporary VM using a VirtualBox ISO
-  guest_os_type    = "Ubuntu_64"
+  # Tells Packer how to start the temporary VM using QEMU/KVM
+  accelerator      = "kvm"
   iso_url          = var.iso_url
   # ... VM settings (cpus, memory, disk, etc.) ...
   # ... How to boot the VM and start auto-install (boot_command) ...
@@ -134,7 +159,7 @@ source "virtualbox-iso" "ubuntu" {
 
 build {
   # This block defines the build process
-  sources = ["source.virtualbox-iso.ubuntu"] # Use the builder defined above
+  sources = ["source.qemu.ubuntu"] # Use the builder defined above
 
   post-processor "vagrant" {
     # This is a 'post-processor'
@@ -144,7 +169,7 @@ build {
 }
 ```
 
-*This simplified snippet from `packer.pkr.hcl` shows the main parts: defining plugins/variables, configuring how to build a VirtualBox VM from an ISO (`source`), and how to package the result (`build` with a `post-processor`).*
+*This simplified snippet from `packer.pkr.hcl` shows the main parts: defining plugins/variables, configuring how to build a QEMU/KVM VM from an ISO (`source`), and how to package the result (`build` with a `post-processor`).*
 
 The `source` block tells Packer *how* to create and configure the temporary VM, including pointing it to the OS installation media and the files needed for automated setup ([user-data/meta-data](06_ubuntu_auto_install__cloud_init__.md)). The `build` block tells Packer which `source` to use and what to do *after* the VM is built (like running the `vagrant` post-processor to create the `.box` file).
 

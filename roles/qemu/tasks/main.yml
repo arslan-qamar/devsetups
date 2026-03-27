@@ -1,0 +1,11 @@
+- name: "{{ 'Remove' if state == 'absent' else 'Install' }} QEMU packages"
+  apt:
+    name:
+      - qemu-system-x86
+      - qemu-system-gui
+      - qemu-system-modules-spice
+      - qemu-utils
+      - qemu-block-extra
+    state: "{{ state }}"
+    update_cache: yes
+  become: yes

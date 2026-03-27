@@ -46,10 +46,11 @@ Vagrant.configure("2") do |config|
   config.vm.provision "shell", name: "10_validate_setup", privileged: false,
     path: "../provision_10_validate_setup.sh"
   
-  # Add VirtualBox-specific customizations
-  config.vm.provider "virtualbox" do |vb|
-    vb.gui = true
-    vb.memory = "14576"    
+  # Add libvirt-specific customizations
+  config.vm.provider "libvirt" do |libvirt|
+    libvirt.memory = 14576
+    libvirt.graphics_type = "spice"
+    libvirt.video_type = "virtio"
   end
   
 end

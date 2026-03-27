@@ -9,7 +9,7 @@ This repository provides a virtualized environment for setting up and running an
 
 ## Prerequisites
 - Install [Vagrant](https://www.vagrantup.com/).
-- Install a supported virtualization provider (e.g., VirtualBox).
+- Install libvirt with QEMU/KVM and a GUI such as virt-manager.
 
 ## Setup Instructions
 

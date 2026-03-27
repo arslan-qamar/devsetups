@@ -1,0 +1,6 @@
+- name: "{{ 'Remove' if state == 'absent' else 'Install' }} virt-manager"
+  apt:
+    name: virt-manager
+    state: "{{ state }}"
+    update_cache: yes
+  become: yes

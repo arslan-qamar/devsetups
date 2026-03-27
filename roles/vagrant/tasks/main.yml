@@ -34,8 +34,27 @@
     update_cache: yes
     cache_valid_time: 3600  
 
+- name: Check installed Vagrant plugins
+  command: vagrant plugin list
+  register: vagrant_plugin_list
+  changed_when: false
+  failed_when: false
+
+- name: Uninstall vagrant-libvirt plugin
+  command: vagrant plugin uninstall vagrant-libvirt
+  when:
+    - state == "absent"
+    - vagrant_plugin_list.rc == 0
+    - "'vagrant-libvirt' in vagrant_plugin_list.stdout"
+
 - name: "{{ 'Remove' if state == 'absent' else 'Setup' }} Vagrant"
   become: yes
   apt:
     name: vagrant
     state: "{{ state }}"
+
+- name: Install vagrant-libvirt plugin
+  command: vagrant plugin install vagrant-libvirt
+  when:
+    - state == "present"
+    - "'vagrant-libvirt' not in vagrant_plugin_list.stdout"

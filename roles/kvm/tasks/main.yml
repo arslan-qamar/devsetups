@@ -1,0 +1,16 @@
+- name: "{{ 'Remove' if state == 'absent' else 'Install' }} KVM packages"
+  apt:
+    name:
+      - qemu-kvm
+      - cpu-checker
+    state: "{{ state }}"
+    update_cache: yes
+  become: yes
+
+- name: Ensure current user is in kvm group
+  user:
+    name: "{{ ansible_user_id }}"
+    groups: kvm
+    append: yes
+  become: yes
+  when: state == 'present'

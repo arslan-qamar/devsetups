@@ -3,6 +3,7 @@ deps_to_install:
   - git
   - jq
   - yq
+  - whois
   - nodejs
   - npm
   

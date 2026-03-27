@@ -51,7 +51,7 @@ In `devsetups`, the `ubuntu-autoinstall` directory contains the files needed for
     # ...
     ```
     *This shows how the bootstrap script generates the specific `user-data` file used for the build by filling in the password and SSH key.*
-4.  **`packer.pkr.hcl`**: The Packer template file ([Chapter 5](05_packer_template__packer_pkr_hcl__.md)). This file tells Packer how to present the `user-data` and `meta-data` files to the Ubuntu installer. It does this in the `source "virtualbox-iso"` block:
+4.  **`packer.pkr.hcl`**: The Packer template file ([Chapter 5](05_packer_template__packer_pkr_hcl__.md)). This file tells Packer how to present the `user-data` and `meta-data` files to the Ubuntu installer. It does this in the `source "qemu"` block:
     *   It adds a special parameter (`ds=nocloud`) to the kernel's `boot_command`. This tells the Ubuntu installer to activate the "nocloud" datasource, meaning it should look for configuration files locally instead of reaching out to cloud providers.
     *   It uses `cd_files` to attach `user-data` and `meta-data` as files on a virtual CD-ROM.
     *   It uses `cd_label` to label this virtual CD-ROM as `cidata`. The `nocloud` datasource specifically looks for a CD-ROM with the label `cidata` containing `user-data` and `meta-data`.

@@ -11,9 +11,41 @@ Vagrant.configure("2") do |config|
   config.ssh.username = "ubuntu"  
   config.ssh.private_key_path = [ENV.fetch('VAGRANT_CUSTOM_KEY_PATH')] 
   config.ssh.insert_key = false
-  default_interface = `ip route get 8.8.8.8 | grep -oP 'dev \\K\\S+'`.strip
-  config.vm.network "public_network", bridge: default_interface
+
+  # Auto-detect a suitable Linux bridge for public networking.
+  # Prefer br0. If absent, pick any Linux bridge that is UP and not managed
+  # exclusively by libvirt/docker (virbr*, docker*).
+  bridge_interface = begin
+    override = ENV['VAGRANT_BRIDGE'].to_s.strip
+    if !override.empty? && File.directory?("/sys/class/net/#{override}/bridge")
+      override
+    else
+      candidates = Dir.glob('/sys/class/net/*/bridge').map { |p| File.basename(File.dirname(p)) }
+      up_bridges = candidates.select do |b|
+        File.read("/sys/class/net/#{b}/operstate").strip == 'up'
+      end
+      up_bridges.find { |b| b == 'br0' } ||
+        up_bridges.find { |b| b !~ /^(virbr|docker)/ }
+    end
+  end
+
+  if bridge_interface
+    config.vm.network "public_network",
+      libvirt__dev: bridge_interface,
+      libvirt__mode: "bridge",
+      libvirt__type: "bridge"
+  else
+    config.vm.network "private_network", type: "dhcp"
+  end
   
+  config.vm.provider "libvirt" do |libvirt|
+    libvirt.driver = "kvm"
+    libvirt.cpus = 6
+    libvirt.memory = 16384
+    libvirt.graphics_type = "spice"
+    libvirt.graphics_autoport = true
+    libvirt.video_type = "virtio"
+  end
 
   # Copy host timezone file to a temporary location in the VM
   config.vm.provision "file", source: "/etc/timezone", destination: "/tmp/host-timezone"
@@ -26,40 +58,6 @@ Vagrant.configure("2") do |config|
     echo "Updating timezone using dpkg-reconfigure..."
     sudo ln -sf /usr/share/zoneinfo/$(cat /etc/timezone) /etc/localtime
     sudo dpkg-reconfigure -f noninteractive tzdata
-  SHELL
-
-
-  # Copy Guest Additions ISO
-  config.vm.provision "file", source: "/usr/share/virtualbox/VBoxGuestAdditions.iso", destination: "/tmp/VBoxGuestAdditions.iso"
-
-  # Add a shell provisioner to install VirtualBox Guest Additions
-  config.vm.provision "shell", inline: <<-SHELL
-    set -e
-    echo "Installing required tools..."
-    sudo apt-get update
-    sudo apt-get install -y build-essential dkms linux-headers-$(uname -r) p7zip-full
-  SHELL
-
-  config.vm.provision "shell", name: "virtualbox_guest_additions", inline: <<-SHELL
-    set -e    
-    echo "Checking if VirtualBox Guest Additions are properly installed..."
-    if ! modinfo vboxguest >/dev/null 2>&1 || ! VBoxService --version >/dev/null 2>&1; then
-      echo "VirtualBox Guest Additions not found or not working properly. Installing..."
-      mkdir -p /tmp/vboxguest
-      7z x /tmp/VBoxGuestAdditions.iso -o/tmp/vboxguest || {
-        echo "Failed to extract VBoxGuestAdditions.iso"
-        rm -rf /tmp/vboxguest /tmp/VBoxGuestAdditions.iso
-        exit 1
-      }
-      
-      echo "Installing VirtualBox Guest Additions..."
-      sudo sh /tmp/vboxguest/VBoxLinuxAdditions.run || true
-    else
-      echo "VirtualBox Guest Additions already installed. Skipping installation."
-    fi      
-    
-    echo "Cleaning up..."
-    rm -rf /tmp/vboxguest /tmp/VBoxGuestAdditions.iso
   SHELL
 
 end
