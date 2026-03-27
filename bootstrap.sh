@@ -53,6 +53,4 @@ if [ "$STATE" = "present" ] && [ "$CONNECTION" = "local" ] && [ "$INVENTORY" = "
   bash ./host/provision_setup_git_ssh_doppler_gpg_access.sh
 fi
 
-# ansible-playbook -vvv "main.yml" -i "localhost" --connection="local" --extra-vars "state=present" -t="dotnet"
-
 echo "[✓] Reboot for complete changes to take place."

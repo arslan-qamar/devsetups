@@ -10,6 +10,14 @@ if [ -n "$EMAIL_INPUT" ]; then
   EMAIL="$EMAIL_INPUT"
 fi
 
+# Login to Doppler
+echo "Logging into Doppler..."
+if doppler whoami &>/dev/null; then
+  echo "Already authenticated with Doppler, skipping login."
+else
+  doppler login
+fi
+
 echo "Setting up Git SSH access for $EMAIL on machine: $MACHINE_NAME"
 
 # Generate SSH key pair if it doesn't already exist
@@ -47,14 +55,6 @@ gh ssh-key add "${KEY_PATH}.pub" --title "$MACHINE_NAME"
 # Verify SSH connection to GitHub
 echo "Verifying SSH connection to GitHub..."
 ssh -T git@github.com -o StrictHostKeyChecking=no || true
-
-# Login to Doppler
-echo "Logging into Doppler..."
-if doppler whoami &>/dev/null; then
-  echo "Already authenticated with Doppler, skipping login."
-else
-  doppler login
-fi
 
 # Setup GPG signing from Doppler git-creds project
 echo "Setting up Git GPG signing from Doppler..."
