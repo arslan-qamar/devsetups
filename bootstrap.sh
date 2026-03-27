@@ -44,11 +44,13 @@ STATE=$(case "${4:-install}" in install) echo "present";; uninstall) echo "absen
 echo "State target set to : " $STATE
 # Specify which tags to run in the playbook (optional)
 TAGS="${5:-}"
+# Whether to run host-level Git/SSH/Doppler/GPG setup (optional, default: false)
+HOST="${6:-false}"
 
 ansible-playbook -vvv "$PLAYBOOK_FILE" -i "$INVENTORY" --connection="$CONNECTION" --extra-vars "state=$STATE" ${TAGS:+-t="$TAGS"}
 
 # Run host-level Git and credential setup after package installation.
-if [ "$STATE" = "present" ] && [ "$CONNECTION" = "local" ] && [ "$INVENTORY" = "localhost," ] && [ -f "./host/provision_setup_git_ssh_doppler_gpg_access.sh" ]; then
+if [ "$HOST" = "true" ] && [ -f "./host/provision_setup_git_ssh_doppler_gpg_access.sh" ]; then
   echo "[+] Running host Git/SSH/Doppler/GPG setup..."
   bash ./host/provision_setup_git_ssh_doppler_gpg_access.sh
 fi
