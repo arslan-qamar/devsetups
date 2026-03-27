@@ -48,9 +48,9 @@ TAGS="${5:-}"
 ansible-playbook -vvv "$PLAYBOOK_FILE" -i "$INVENTORY" --connection="$CONNECTION" --extra-vars "state=$STATE" ${TAGS:+-t="$TAGS"}
 
 # Run host-level Git and credential setup after package installation.
-if [ "$STATE" = "present" ] && [ "$CONNECTION" = "local" ] && [ "$INVENTORY" = "localhost," ] && [ -f "provision_setup_git_ssh_doppler_gpg_access.sh" ]; then
+if [ "$STATE" = "present" ] && [ "$CONNECTION" = "local" ] && [ "$INVENTORY" = "localhost," ] && [ -f "./host/provision_setup_git_ssh_doppler_gpg_access.sh" ]; then
   echo "[+] Running host Git/SSH/Doppler/GPG setup..."
-  bash ./provision_setup_git_ssh_doppler_gpg_access.sh
+  bash ./host/provision_setup_git_ssh_doppler_gpg_access.sh
 fi
 
 # ansible-playbook -vvv "main.yml" -i "localhost" --connection="local" --extra-vars "state=present" -t="dotnet"
