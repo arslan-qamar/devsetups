@@ -15,7 +15,7 @@ echo "Logging into Doppler..."
 if doppler whoami &>/dev/null; then
   echo "Already authenticated with Doppler, skipping login."
 else
-  doppler login
+  doppler login -y
 fi
 
 echo "Setting up Git SSH access for $EMAIL on machine: $MACHINE_NAME"
