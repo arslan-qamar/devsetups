@@ -1,0 +1,21 @@
+---
+- name: Ensure PostgreSQL packages are {{ state }}
+  apt:
+    name:
+      - postgresql
+      - postgresql-contrib
+    state: "{{ state }}"
+    update_cache: yes
+    purge: "{{ 'yes' if state == 'absent' else 'no' }}"
+  become: yes
+
+- name: Gather service facts
+  service_facts:
+  when: state == 'present'
+
+- name: Ensure PostgreSQL service is running
+  assert:
+    that:
+      - "'postgresql.service' in ansible_facts.services"
+      - "ansible_facts.services['postgresql.service'].state == 'running'"
+  when: state == 'present'

@@ -43,6 +43,9 @@
 
     - role: python
       tags: python
+
+    - role: postgres
+      tags: postgres
     
     - role: ruby
       tags: ruby

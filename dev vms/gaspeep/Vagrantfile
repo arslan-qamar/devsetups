@@ -22,12 +22,22 @@ Vagrant.configure("2") do |config|
   
   # 01. Install bootstrap
   config.vm.provision "shell", name: "01_install_bootstrap", privileged: false,
+    env: {
+      "BOOTSTRAP_TAGS" => "doppler,helm,argocd,kubectl,python,deps,docker,githubcli,zsh,postgres",
+    },
     path: "../provision_01_install_bootstrap.sh"
 
   # 02. Setup SSH key
   config.vm.provision "shell", name: "02_setup_ssh_key", privileged: false,
     path: "../provision_02_setup_ssh_key.sh"
- 
+
+  # 03. Clone git repo
+  config.vm.provision "shell", name: "03_clone_git_repo", privileged: false,
+    env: {
+      "REPOSITORY_NAME" => "gaspeep",
+    },
+    path: "../provision_03_clone_git_repo.sh"
+
 
   # 05. Setup git GPG signing
   config.vm.provision "shell", name: "05_setup_git_gpg_signing", privileged: false,
