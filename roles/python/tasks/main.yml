@@ -1,10 +1,22 @@
 - name: Install Python 3 and venv package
   become: true
-  apt:  
-    name:    
+  apt:
+    name:
       - "{{ python_version }}"
       - "{{ python_version }}-venv"
-    state: "{{ state }}"
+    state: present
     update_cache: yes
     dpkg_options: 'force-confold,force-confdef'
     lock_timeout: 60
+  when: state == 'present'
+
+- name: Remove Python venv package only
+  become: true
+  apt:
+    name: "{{ python_version }}-venv"
+    state: absent
+    purge: yes
+    update_cache: yes
+    dpkg_options: 'force-confold,force-confdef'
+    lock_timeout: 60
+  when: state == 'absent'

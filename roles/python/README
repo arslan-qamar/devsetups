@@ -1,5 +1,13 @@
-## Run the following command to install Python (Requires SUDO)
+## Install Python (Requires SUDO)
 
 ```shell
 ansible-playbook -vvv main.yml -i "localhost" --connection="localhost" --extra-vars "state=present" -t="python" -K
 ```
+
+## Uninstall Python venv support only (Requires SUDO)
+
+```shell
+ansible-playbook -vvv main.yml -i "localhost" --connection="localhost" --extra-vars "state=absent" -t="python" -K
+```
+
+This intentionally removes only the `python3-venv` package. The base `python3` interpreter is left installed because removing the system Python package on Ubuntu can break core package dependencies.
