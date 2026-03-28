@@ -103,16 +103,26 @@ git -C "$SIGN_TEST_DIR" config commit.gpgsign true
 echo "Enabled commit.gpgsign in test repo."
 git -C "$SIGN_TEST_DIR" config user.signingkey "$GPG_KEY_ID"
 echo "Configured test repo signing key: $GPG_KEY_ID"
+echo "Resolved gpg.program: $(git -C "$SIGN_TEST_DIR" config --get gpg.program || echo gpg)"
+echo "Current GPG_TTY: ${GPG_TTY:-<unset>}"
+echo "Current TTY: $(tty || echo '<none>')"
+echo "Available secret keys:"
+gpg --list-secret-keys --keyid-format=long "$GPG_KEY_ID" || true
 touch "$SIGN_TEST_DIR/test"
 echo "Created test file: $SIGN_TEST_DIR/test"
 git -C "$SIGN_TEST_DIR" add .
 echo "Staged test file."
 echo "Running signed commit test..."
-if COMMIT_OUTPUT=$(git -C "$SIGN_TEST_DIR" commit -S -m "signing test" -q 2>&1); then
+if COMMIT_OUTPUT=$(timeout 20s env GIT_TRACE=1 git -C "$SIGN_TEST_DIR" commit -S -m "signing test" -q 2>&1); then
   echo "Commit signing verified successfully."
 else
+  COMMIT_STATUS=$?
   echo "git commit output:" >&2
   echo "$COMMIT_OUTPUT" >&2
+  if [ "$COMMIT_STATUS" -eq 124 ]; then
+    echo "ERROR: Signed commit timed out after 20 seconds. GPG is likely waiting for pinentry, passphrase entry, or agent confirmation." >&2
+    echo "Hint: verify gpg-agent/pinentry setup and whether loopback pinentry is required for non-interactive signing." >&2
+  fi
   echo "ERROR: Commit signing failed. Check your GPG key setup." >&2
   rm -rf "$SIGN_TEST_DIR"
   exit 1
