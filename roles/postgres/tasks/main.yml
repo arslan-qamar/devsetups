@@ -1,13 +1,67 @@
 ---
 - name: Ensure PostgreSQL packages are {{ state }}
   apt:
-    name:
-      - postgresql
-      - postgresql-contrib
+    name: "{{ ['postgresql'] if state == 'present' else ['postgresql', 'postgresql-[0-9]*'] }}"
     state: "{{ state }}"
-    update_cache: yes
-    purge: "{{ 'yes' if state == 'absent' else 'no' }}"
+    update_cache: "{{ state == 'present' }}"
+    purge: no
   become: yes
+
+- name: Gather PostgreSQL data directories before removal
+  shell: find /var/lib/postgresql -mindepth 2 -maxdepth 2 -type d | sort
+  register: postgres_data_directories_before_removal
+  changed_when: false
+  failed_when: false
+  become: yes
+  when: state == 'absent'
+
+- name: Gather PostgreSQL service facts before removal
+  service_facts:
+  when: state == 'absent'
+
+- name: Ensure PostgreSQL service is stopped before removal
+  service:
+    name: postgresql
+    state: stopped
+    enabled: no
+  become: yes
+  when:
+    - state == 'absent'
+    - "'postgresql.service' in ansible_facts.services"
+
+- name: Gather PostgreSQL clusters
+  command: pg_lsclusters --no-header
+  register: postgres_clusters_before_start
+  changed_when: false
+  failed_when: false
+  become: yes
+  when: state == 'present'
+
+- name: Detect installed PostgreSQL versions
+  shell: find /usr/lib/postgresql -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | sort -V
+  register: postgres_installed_versions
+  changed_when: false
+  become: yes
+  when:
+    - state == 'present'
+    - postgres_clusters_before_start.stdout_lines | length == 0
+
+- name: Ensure PostgreSQL version is available for cluster creation
+  assert:
+    that:
+      - postgres_installed_versions.stdout_lines | length > 0
+    fail_msg: >-
+      PostgreSQL packages were installed, but no PostgreSQL version directory was found under /usr/lib/postgresql.
+  when:
+    - state == 'present'
+    - postgres_clusters_before_start.stdout_lines | length == 0
+
+- name: Create default PostgreSQL cluster
+  command: pg_createcluster {{ postgres_installed_versions.stdout_lines | last }} main --start
+  become: yes
+  when:
+    - state == 'present'
+    - postgres_clusters_before_start.stdout_lines | length == 0
 
 - name: Ensure PostgreSQL service is started
   service:
@@ -17,35 +71,78 @@
   become: yes
   when: state == 'present'
 
-- name: Gather service facts
-  service_facts:
+- name: Gather PostgreSQL clusters after startup
+  command: pg_lsclusters --no-header
+  register: postgres_clusters_after_start
+  changed_when: false
+  failed_when: false
+  become: yes
   when: state == 'present'
 
-- name: Ensure PostgreSQL service is running
+- name: Gather online PostgreSQL clusters after startup
+  shell: pg_lsclusters --no-header | awk '$4 == "online" { print }'
+  register: postgres_online_clusters_after_start
+  changed_when: false
+  failed_when: false
+  become: yes
+  when: state == 'present'
+
+- name: Ensure PostgreSQL cluster is online
   vars:
-    postgres_service_units: >-
+    postgres_cluster_lines: >-
       {{
-        ansible_facts.services
-        | dict2items
-        | selectattr('key', 'match', '^postgresql(@.+)?\\.service$')
-        | list
-      }}
-    postgres_running_service_units: >-
-      {{
-        ansible_facts.services
-        | dict2items
-        | selectattr('key', 'match', '^postgresql(@.+)?\\.service$')
-        | selectattr('value.state', 'equalto', 'running')
-        | map(attribute='key')
+        postgres_clusters_after_start.stdout_lines
         | list
       }}
   assert:
     that:
-      - "postgres_service_units | length > 0"
-      - "postgres_running_service_units | length > 0"
+      - "postgres_cluster_lines | length > 0"
+      - "postgres_online_clusters_after_start.stdout_lines | length > 0"
     fail_msg: >-
-      PostgreSQL packages were installed, but no running PostgreSQL systemd unit was found.
-      Detected units: {{ postgres_service_units | map(attribute='key') | list }}
+      PostgreSQL packages were installed, but no online PostgreSQL cluster was found.
+      Detected clusters: {{ postgres_cluster_lines }}
     success_msg: >-
-      Running PostgreSQL units: {{ postgres_running_service_units | join(', ') }}
+      Online PostgreSQL clusters: {{ postgres_online_clusters_after_start.stdout_lines | join(', ') }}
   when: state == 'present'
+
+- name: Verify PostgreSQL accepts local connections
+  command: psql template1 -c "SELECT 1;"
+  become: yes
+  become_user: postgres
+  changed_when: false
+  when: state == 'present'
+
+- name: Gather PostgreSQL data directories after removal
+  shell: find /var/lib/postgresql -mindepth 2 -maxdepth 2 -type d | sort
+  register: postgres_data_directories_after_removal
+  changed_when: false
+  failed_when: false
+  become: yes
+  when: state == 'absent'
+
+- name: Gather PostgreSQL server packages after removal
+  shell: dpkg-query -W -f='${Package} ${Status}\n' 'postgresql' 'postgresql-[0-9]*' 2>/dev/null | awk '$4 == "installed" { print $1 }'
+  register: postgres_installed_server_packages_after_removal
+  changed_when: false
+  failed_when: false
+  become: yes
+  when: state == 'absent'
+
+- name: Gather PostgreSQL service facts after removal
+  service_facts:
+  when: state == 'absent'
+
+- name: Ensure PostgreSQL server is removed and data directories are preserved
+  assert:
+    that:
+      - "postgres_installed_server_packages_after_removal.stdout_lines | length == 0"
+      - "'postgresql.service' not in ansible_facts.services or ansible_facts.services['postgresql.service'].state != 'running'"
+      - "postgres_data_directories_before_removal.stdout_lines | difference(postgres_data_directories_after_removal.stdout_lines) | length == 0"
+    fail_msg: >-
+      PostgreSQL server removal did not complete as expected.
+      Remaining packages: {{ postgres_installed_server_packages_after_removal.stdout_lines }}.
+      Data directories before removal: {{ postgres_data_directories_before_removal.stdout_lines }}.
+      Data directories after removal: {{ postgres_data_directories_after_removal.stdout_lines }}.
+    success_msg: >-
+      PostgreSQL server packages were removed and data directories were preserved: {{ postgres_data_directories_after_removal.stdout_lines | join(', ') }}
+  when: state == 'absent'
