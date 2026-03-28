@@ -53,6 +53,22 @@
     name: vagrant
     state: "{{ state }}"
 
+- name: Install vagrant-libvirt plugin build dependencies
+  become: yes
+  apt:
+    name:
+      - libvirt-dev
+      - pkg-config
+      - gcc
+      - make
+      - ruby-dev
+      - zlib1g-dev
+      - libxml2-dev
+      - libxslt1-dev
+    state: present
+    update_cache: yes
+  when: state == "present"
+  
 - name: Install vagrant-libvirt plugin
   command: vagrant plugin install vagrant-libvirt
   when:
