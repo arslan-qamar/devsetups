@@ -1,5 +1,13 @@
-## Run the following command to install Visual Studio Code (Requires SUDO)
+## Install Visual Studio Code (Requires SUDO)
 
 ```shell
 ansible-playbook -vvv main.yml -i "localhost" --connection="localhost" --extra-vars "state=present" -t="vscode" -K
 ```
+
+## Uninstall Visual Studio Code with full cleanup (Requires SUDO)
+
+```shell
+ansible-playbook -vvv main.yml -i "localhost" --connection="localhost" --extra-vars "state=absent" -t="vscode" -K
+```
+
+This removes the `code` package, the Microsoft apt repository and keyring, and the current user's VS Code extensions, cache, and config under `/home/$USER`.

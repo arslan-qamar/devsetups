@@ -1,29 +1,97 @@
 ---
-- name: Add Microsoft GPG key
+- name: Ensure /etc/apt/keyrings directory exists
   become: true
-  apt_key:  
+  file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: "0755"
+  when: state == 'present'
+
+- name: Download Microsoft GPG key
+  become: true
+  get_url:
     url: https://packages.microsoft.com/keys/microsoft.asc
-    state: "{{ state }}"
+    dest: /etc/apt/keyrings/packages.microsoft.asc
+    mode: "0644"
+  when: state == 'present'
 
 - name: Add VS Code repository
   become: true
-  apt_repository:  
-    repo: "deb [arch=amd64] https://packages.microsoft.com/repos/vscode stable main"
-    state: "{{ state }}"
+  apt_repository:
+    repo: "deb [arch=amd64 signed-by=/etc/apt/keyrings/packages.microsoft.asc] https://packages.microsoft.com/repos/vscode stable main"
+    state: present
     filename: vscode
+  when: state == 'present'
 
 - name: Install Visual Studio Code
   become: true
   apt:
     name: code
-    state: "{{ state }}"
+    state: present
+    update_cache: true
+  when: state == 'present'
+
+- name: Get installed VS Code extensions
+  become: false
+  become_user: "{{ ansible_env.USER }}"
+  command:
+    cmd: "code --list-extensions --no-sandbox --user-data-dir /home/{{ ansible_env.USER }}/.config/Code"
+  register: vscode_extensions_installed
+  changed_when: false
+  when: state == 'present'
 
 - name: Ensure VS Code extensions are installed
   become: false
   become_user: "{{ ansible_env.USER }}"
-  shell: |
-    code --install-extension GitHub.copilot --no-sandbox --user-data-dir /home/{{ ansible_env.USER }}/.config/Code
-    code --install-extension ms-python.python --no-sandbox --user-data-dir /home/{{ ansible_env.USER }}/.config/Code
-    code --install-extension esbenp.prettier-vscode --no-sandbox --user-data-dir /home/{{ ansible_env.USER }}/.config/Code
-    code --install-extension ms-dotnettools.csdevkit --no-sandbox --user-data-dir /home/{{ ansible_env.USER }}/.config/Code
-    code --install-extension ms-dotnettools.csharp --no-sandbox --user-data-dir /home/{{ ansible_env.USER }}/.config/Code
+  command:
+    cmd: "code --install-extension {{ item }} --no-sandbox --user-data-dir /home/{{ ansible_env.USER }}/.config/Code"
+  loop:
+    - GitHub.copilot
+    - ms-python.python
+    - esbenp.prettier-vscode
+    - ms-dotnettools.csdevkit
+    - ms-dotnettools.csharp
+  when:
+    - state == 'present'
+    - item not in vscode_extensions_installed.stdout_lines
+
+- name: Remove VS Code user data and extensions
+  become: false
+  become_user: "{{ ansible_env.USER }}"
+  file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - "/home/{{ ansible_env.USER }}/.config/Code"
+    - "/home/{{ ansible_env.USER }}/.cache/Code"
+    - "/home/{{ ansible_env.USER }}/.vscode"
+  when: state == 'absent'
+
+- name: Uninstall Visual Studio Code
+  become: true
+  apt:
+    name: code
+    state: absent
+    purge: true
+    update_cache: true
+  when: state == 'absent'
+
+- name: Remove VS Code repository
+  become: true
+  file:
+    path: /etc/apt/sources.list.d/vscode.list
+    state: absent
+  when: state == 'absent'
+
+- name: Remove Microsoft GPG keyring
+  become: true
+  file:
+    path: /etc/apt/keyrings/packages.microsoft.asc
+    state: absent
+  when: state == 'absent'
+
+- name: Update apt package index after removing VS Code repository
+  become: true
+  apt:
+    update_cache: true
+  when: state == 'absent'
