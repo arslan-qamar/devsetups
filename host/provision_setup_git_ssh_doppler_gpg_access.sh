@@ -46,6 +46,7 @@ if gh auth status &>/dev/null; then
   echo "Already authenticated with GitHub CLI, skipping login."
 else
   gh auth login --git-protocol ssh --web
+  gh auth refresh -h github.com -s admin:public_key
 fi
 
 # Add the public key to GitHub
