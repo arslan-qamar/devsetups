@@ -7,6 +7,7 @@ MACHINE_NAME="${1:-$(hostname)}"
 STATE_DIR="$HOME/.config/devsetups"
 STATE_FILE="$STATE_DIR/host_credentials.env"
 KEY_CREATED="false"
+GPG_IMPORTED_BY_SETUP="false"
 
 read -r -p "Git email [$EMAIL]: " EMAIL_INPUT
 if [ -n "$EMAIL_INPUT" ]; then
@@ -65,6 +66,10 @@ ssh -T git@github.com -o StrictHostKeyChecking=no || true
 echo "Setting up Git GPG signing from Doppler..."
 echo "Fetching GPG private key from Doppler..."
 doppler secrets -p git-creds -c dev_personal --json --raw | jq -r '.PRIVKEY.raw' > /tmp/privkey.asc
+IMPORTED_GPG_FINGERPRINT=$(gpg --show-keys --with-colons /tmp/privkey.asc | awk -F: '/^fpr:/ {print $10; exit}')
+if ! gpg --list-secret-keys --with-colons "$IMPORTED_GPG_FINGERPRINT" >/dev/null 2>&1; then
+  GPG_IMPORTED_BY_SETUP="true"
+fi
 echo "Importing GPG private key..."
 gpg --batch --yes --pinentry-mode loopback \
   --passphrase-file <(doppler secrets -p git-creds -c dev_personal --json --raw | jq -r '.PASSPHRASE.raw') \
@@ -100,6 +105,7 @@ KEY_PATH="$KEY_PATH"
 KEY_CREATED="$KEY_CREATED"
 GPG_KEY_ID="$GPG_KEY_ID"
 GPG_FINGERPRINT="$GPG_FINGERPRINT"
+GPG_IMPORTED_BY_SETUP="$GPG_IMPORTED_BY_SETUP"
 EOF
 chmod 600 "$STATE_FILE"
 

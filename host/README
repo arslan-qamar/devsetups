@@ -5,9 +5,11 @@ To setup host run the following command:
 wget --header="Cache-Control: no-cache" -qO- "https://raw.githubusercontent.com/arslan-qamar/devsetups/refs/heads/main/bootstrap.sh?ts=$(date +%s)" | bash -s "main.yml" "localhost," "local" "install" "deps,zsh,dotnet,doppler,githubcli,packer,python,vagrant,vscode,zsh,docker,rider," "true"
 ```
 
-When `HOST=true`, the bootstrap flow now asks whether it should run [provision_setup_git_ssh_doppler_gpg_access.sh](provision_setup_git_ssh_doppler_gpg_access.sh) after the Ansible roles finish.
+When `HOST=true`, the bootstrap flow asks on the controlling terminal whether it should run [provision_setup_git_ssh_doppler_gpg_access.sh](provision_setup_git_ssh_doppler_gpg_access.sh) after the Ansible roles finish.
 
-For uninstall runs with `HOST=true`, bootstrap asks whether it should run local SSH/GPG cleanup. That cleanup removes the local SSH key files created for the host flow and attempts to remove the imported local GPG key and related Git signing config without depending on GitHub CLI or Doppler still being installed.
+If no interactive terminal is available, the prompt is skipped and the host setup is not run.
+
+For uninstall runs with `HOST=true`, bootstrap asks on the controlling terminal whether it should run local SSH/GPG cleanup. That cleanup removes the local SSH key files created for the host flow and attempts to remove the imported local GPG key and related Git signing config without depending on GitHub CLI or Doppler still being installed.
 
 To run host uninstall cleanup:
 ```shell

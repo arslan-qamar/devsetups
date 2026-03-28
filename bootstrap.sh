@@ -4,6 +4,19 @@
 
 set -exuo pipefail
 
+prompt_yes_no() {
+  local prompt_message="$1"
+  local reply
+
+  if [ ! -r /dev/tty ]; then
+    echo "[i] No interactive terminal available. Skipping prompt: $prompt_message"
+    return 1
+  fi
+
+  read -r -p "$prompt_message" reply < /dev/tty
+  [[ "$reply" =~ ^[Yy]$ ]]
+}
+
 cd ~
 
 # Step 1: Update system and install dependencies (Ansible and curl)
@@ -51,8 +64,7 @@ ansible-playbook -vvv "$PLAYBOOK_FILE" -i "$INVENTORY" --connection="$CONNECTION
 
 # Run optional host-level credential setup or cleanup after the playbook.
 if [ "$HOST" = "true" ] && [ "$STATE" = "present" ] && [ -f "./host/provision_setup_git_ssh_doppler_gpg_access.sh" ]; then
-  read -r -p "Run host SSH/GPG setup as well? [y/N]: " RUN_HOST_SETUP
-  if [[ "$RUN_HOST_SETUP" =~ ^[Yy]$ ]]; then
+  if prompt_yes_no "Run host SSH/GPG setup as well? [y/N]: "; then
     echo "[+] Running host Git/SSH/Doppler/GPG setup..."
     bash ./host/provision_setup_git_ssh_doppler_gpg_access.sh
   else
@@ -61,8 +73,7 @@ if [ "$HOST" = "true" ] && [ "$STATE" = "present" ] && [ -f "./host/provision_se
 fi
 
 if [ "$HOST" = "true" ] && [ "$STATE" = "absent" ] && [ -f "./host/cleanup_git_ssh_gpg_access.sh" ]; then
-  read -r -p "Remove local SSH/GPG materials created by host setup? [y/N]: " RUN_HOST_CLEANUP
-  if [[ "$RUN_HOST_CLEANUP" =~ ^[Yy]$ ]]; then
+  if prompt_yes_no "Remove local SSH/GPG materials created by host setup? [y/N]: "; then
     echo "[+] Running local host SSH/GPG cleanup..."
     bash ./host/cleanup_git_ssh_gpg_access.sh
   else
