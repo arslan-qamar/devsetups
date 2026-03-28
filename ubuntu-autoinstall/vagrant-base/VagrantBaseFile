@@ -45,6 +45,7 @@ Vagrant.configure("2") do |config|
     libvirt.graphics_type = "spice"
     libvirt.graphics_autoport = true
     libvirt.video_type = "virtio"
+    libvirt.channel type: 'spicevmc', target_name: 'com.redhat.spice.0', target_type: 'virtio'
   end
 
   # Copy host timezone file to a temporary location in the VM

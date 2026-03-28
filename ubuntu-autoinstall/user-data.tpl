@@ -12,6 +12,8 @@ autoinstall:
        - {{ ssh_authorized_key }}
   apt:
     fallback: offline-install   
+  packages:
+    - spice-vdagent
   users:
     - name: ubuntu
       sudo: ALL=(ALL) NOPASSWD:ALL

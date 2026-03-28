@@ -30,7 +30,7 @@ This script will:
 1. Prompt you to create a custom password for the 'ubuntu' user
 2. Generate an SSH key pair (vagrant_custom_key) for secure authentication
 3. Create the `user-data` file with your custom settings
-4. Run Packer to build the VM image
+4. Run Packer to build the VM image with SPICE guest integration for automatic display resize
 
 Once the `ubuntu-dev.box` is built, add it to Vagrant using the generated metadata file instead of the raw box archive:
 
@@ -57,6 +57,8 @@ vagrant up
 ```
 
 ## Additional Information
+
+The base image now installs `spice-vdagent`, and the shared libvirt Vagrant configuration exposes the SPICE agent channel. After pulling these changes, rebuild the base box and recreate or repackage VMs that still use an older box build if you want automatic display resize support in SPICE clients.
 
 For more details, refer to the respective README files in the application-specific folders.
 

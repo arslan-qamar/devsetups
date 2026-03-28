@@ -22,8 +22,30 @@
   when: state == 'present'
 
 - name: Ensure PostgreSQL service is running
+  vars:
+    postgres_service_units: >-
+      {{
+        ansible_facts.services
+        | dict2items
+        | selectattr('key', 'match', '^postgresql(@.+)?\\.service$')
+        | list
+      }}
+    postgres_running_service_units: >-
+      {{
+        ansible_facts.services
+        | dict2items
+        | selectattr('key', 'match', '^postgresql(@.+)?\\.service$')
+        | selectattr('value.state', 'equalto', 'running')
+        | map(attribute='key')
+        | list
+      }}
   assert:
     that:
-      - "'postgresql.service' in ansible_facts.services"
-      - "ansible_facts.services['postgresql.service'].state == 'running'"
+      - "postgres_service_units | length > 0"
+      - "postgres_running_service_units | length > 0"
+    fail_msg: >-
+      PostgreSQL packages were installed, but no running PostgreSQL systemd unit was found.
+      Detected units: {{ postgres_service_units | map(attribute='key') | list }}
+    success_msg: >-
+      Running PostgreSQL units: {{ postgres_running_service_units | join(', ') }}
   when: state == 'present'

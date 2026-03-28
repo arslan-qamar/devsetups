@@ -13,4 +13,5 @@ ansible-playbook -vvv main.yml -i "localhost" --connection="localhost" --extra-v
 ```
 
 - Installs `postgresql` and `postgresql-contrib` from the Ubuntu apt repositories.
-- Verifies the PostgreSQL service is running after installation.
+- Starts PostgreSQL and verifies that at least one PostgreSQL systemd unit is running after installation.
+- Supports Ubuntu's versioned cluster units such as `postgresql@16-main.service`.
