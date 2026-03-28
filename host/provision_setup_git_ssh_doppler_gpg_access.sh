@@ -4,6 +4,9 @@ set -e
 EMAIL="${EMAIL:-ravian720@gmail.com}"
 KEY_PATH="$HOME/.ssh/id_ed25519"
 MACHINE_NAME="${1:-$(hostname)}"
+STATE_DIR="$HOME/.config/devsetups"
+STATE_FILE="$STATE_DIR/host_credentials.env"
+KEY_CREATED="false"
 
 read -r -p "Git email [$EMAIL]: " EMAIL_INPUT
 if [ -n "$EMAIL_INPUT" ]; then
@@ -26,6 +29,7 @@ if [ ! -f "$KEY_PATH" ]; then
   mkdir -p "$HOME/.ssh"
   chmod 700 "$HOME/.ssh"
   ssh-keygen -t ed25519 -C "$EMAIL" -f "$KEY_PATH" -N ""
+  KEY_CREATED="true"
   echo "SSH key pair generated at $KEY_PATH"
 else
   echo "SSH key already exists at $KEY_PATH, skipping key generation."
@@ -68,6 +72,7 @@ gpg --batch --yes --pinentry-mode loopback \
 rm -f /tmp/privkey.asc
 echo "Extracting GPG key ID..."
 GPG_KEY_ID=$(gpg --list-secret-keys --keyid-format=long | awk '/^sec/{print $2}' | cut -d'/' -f2)
+GPG_FINGERPRINT=$(gpg --with-colons --fingerprint "$GPG_KEY_ID" | awk -F: '/^fpr:/ {print $10; exit}')
 echo "Configuring Git GPG signing with key: $GPG_KEY_ID..."
 git config --global commit.gpgsign true
 git config --global tag.gpgSign true
@@ -88,5 +93,14 @@ git config --global user.name "$GIT_NAME"
 git config --global user.email "$GIT_EMAIL"
 echo "Git user.name set to: $GIT_NAME"
 echo "Git user.email set to: $GIT_EMAIL"
+
+mkdir -p "$STATE_DIR"
+cat > "$STATE_FILE" <<EOF
+KEY_PATH="$KEY_PATH"
+KEY_CREATED="$KEY_CREATED"
+GPG_KEY_ID="$GPG_KEY_ID"
+GPG_FINGERPRINT="$GPG_FINGERPRINT"
+EOF
+chmod 600 "$STATE_FILE"
 
 echo "Git SSH access setup complete."

@@ -49,10 +49,25 @@ HOST="${6:-false}"
 
 ansible-playbook -vvv "$PLAYBOOK_FILE" -i "$INVENTORY" --connection="$CONNECTION" --extra-vars "state=$STATE" ${TAGS:+-t="$TAGS"}
 
-# Run host-level Git and credential setup after package installation.
-if [ "$HOST" = "true" ] && [ -f "./host/provision_setup_git_ssh_doppler_gpg_access.sh" ]; then
-  echo "[+] Running host Git/SSH/Doppler/GPG setup..."
-  bash ./host/provision_setup_git_ssh_doppler_gpg_access.sh
+# Run optional host-level credential setup or cleanup after the playbook.
+if [ "$HOST" = "true" ] && [ "$STATE" = "present" ] && [ -f "./host/provision_setup_git_ssh_doppler_gpg_access.sh" ]; then
+  read -r -p "Run host SSH/GPG setup as well? [y/N]: " RUN_HOST_SETUP
+  if [[ "$RUN_HOST_SETUP" =~ ^[Yy]$ ]]; then
+    echo "[+] Running host Git/SSH/Doppler/GPG setup..."
+    bash ./host/provision_setup_git_ssh_doppler_gpg_access.sh
+  else
+    echo "[i] Skipping host SSH/GPG setup."
+  fi
+fi
+
+if [ "$HOST" = "true" ] && [ "$STATE" = "absent" ] && [ -f "./host/cleanup_git_ssh_gpg_access.sh" ]; then
+  read -r -p "Remove local SSH/GPG materials created by host setup? [y/N]: " RUN_HOST_CLEANUP
+  if [[ "$RUN_HOST_CLEANUP" =~ ^[Yy]$ ]]; then
+    echo "[+] Running local host SSH/GPG cleanup..."
+    bash ./host/cleanup_git_ssh_gpg_access.sh
+  else
+    echo "[i] Skipping local host SSH/GPG cleanup."
+  fi
 fi
 
 echo "[✓] Reboot for complete changes to take place."

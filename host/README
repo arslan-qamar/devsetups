@@ -5,5 +5,14 @@ To setup host run the following command:
 wget --header="Cache-Control: no-cache" -qO- "https://raw.githubusercontent.com/arslan-qamar/devsetups/refs/heads/main/bootstrap.sh?ts=$(date +%s)" | bash -s "main.yml" "localhost," "local" "install" "deps,zsh,dotnet,doppler,githubcli,packer,python,vagrant,vscode,zsh,docker,rider," "true"
 ```
 
-The bootstrap flow will run [provision_setup_git_ssh_doppler_gpg_access.sh](provision_setup_git_ssh_doppler_gpg_access.sh) automatically after the Ansible roles finish.
+When `HOST=true`, the bootstrap flow now asks whether it should run [provision_setup_git_ssh_doppler_gpg_access.sh](provision_setup_git_ssh_doppler_gpg_access.sh) after the Ansible roles finish.
+
+For uninstall runs with `HOST=true`, bootstrap asks whether it should run local SSH/GPG cleanup. That cleanup removes the local SSH key files created for the host flow and attempts to remove the imported local GPG key and related Git signing config without depending on GitHub CLI or Doppler still being installed.
+
+To run host uninstall cleanup:
+```shell
+wget --header="Cache-Control: no-cache" -qO- "https://raw.githubusercontent.com/arslan-qamar/devsetups/refs/heads/main/bootstrap.sh?ts=$(date +%s)" | bash -s "main.yml" "localhost," "local" "uninstall" "deps,zsh,dotnet,doppler,githubcli,packer,python,vagrant,vscode,zsh,docker,rider," "true"
+```
+
+The uninstall cleanup is intentionally local-only. It does not call GitHub or Doppler APIs, because those tools may already have been removed by the time the cleanup runs.
 
