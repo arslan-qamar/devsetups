@@ -92,20 +92,32 @@ echo "Git user.email set to: $GIT_EMAIL"
 # Verify commit signing works
 echo "Verifying commit signing..."
 SIGN_TEST_DIR=$(mktemp -d)
+echo "Created temporary signing test directory: $SIGN_TEST_DIR"
 git init "$SIGN_TEST_DIR" -q
+echo "Initialized temporary git repository."
 git -C "$SIGN_TEST_DIR" config user.name "$GIT_NAME"
+echo "Configured test repo user.name: $GIT_NAME"
 git -C "$SIGN_TEST_DIR" config user.email "$GIT_EMAIL"
+echo "Configured test repo user.email: $GIT_EMAIL"
 git -C "$SIGN_TEST_DIR" config commit.gpgsign true
+echo "Enabled commit.gpgsign in test repo."
 git -C "$SIGN_TEST_DIR" config user.signingkey "$GPG_KEY_ID"
+echo "Configured test repo signing key: $GPG_KEY_ID"
 touch "$SIGN_TEST_DIR/test"
+echo "Created test file: $SIGN_TEST_DIR/test"
 git -C "$SIGN_TEST_DIR" add .
-if git -C "$SIGN_TEST_DIR" commit -S -m "signing test" -q 2>&1; then
+echo "Staged test file."
+echo "Running signed commit test..."
+if COMMIT_OUTPUT=$(git -C "$SIGN_TEST_DIR" commit -S -m "signing test" -q 2>&1); then
   echo "Commit signing verified successfully."
 else
+  echo "git commit output:" >&2
+  echo "$COMMIT_OUTPUT" >&2
   echo "ERROR: Commit signing failed. Check your GPG key setup." >&2
   rm -rf "$SIGN_TEST_DIR"
   exit 1
 fi
+echo "Removing temporary signing test directory: $SIGN_TEST_DIR"
 rm -rf "$SIGN_TEST_DIR"
 
 echo "Git SSH access setup complete."
