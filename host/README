@@ -2,7 +2,7 @@
 
 To setup host run the following command:
 ```shell
-wget --header="Cache-Control: no-cache" -qO- "https://raw.githubusercontent.com/arslan-qamar/devsetups/refs/heads/main/bootstrap.sh?ts=$(date +%s)" | bash -s "main.yml" "localhost," "local" "install" "deps,zsh,dotnet,githubcli,packer,python,vagrant,vscode,zsh,docker,rider," "true"
+wget --header="Cache-Control: no-cache" -qO- "https://raw.githubusercontent.com/arslan-qamar/devsetups/refs/heads/main/bootstrap.sh?ts=$(date +%s)" | bash -s "main.yml" "localhost," "local" "install" "deps,zsh,dotnet,doppler,githubcli,packer,python,vagrant,vscode,zsh,docker,rider," "true"
 ```
 
 The bootstrap flow will run [provision_setup_git_ssh_doppler_gpg_access.sh](provision_setup_git_ssh_doppler_gpg_access.sh) automatically after the Ansible roles finish.
