@@ -29,18 +29,18 @@ Replace `<vm-name.local | 192.168.0.*>` with your VM's Name or VM's IP address. 
 To enable the custom libvirt 3D graphics layout on a VM after it has already been created and provisioned, run:
 
 ```bash
-./ubuntu-autoinstall/vagrant-base/patch_libvirt_graphics.sh <domain|vm-name|vm-directory>
+./toolbox/libvirt/enable_3d_graphics.sh <domain|vm-name|vm-directory>
 ```
 
 Examples:
 
 ```bash
-./ubuntu-autoinstall/vagrant-base/patch_libvirt_graphics.sh gaspeep
-./ubuntu-autoinstall/vagrant-base/patch_libvirt_graphics.sh gaspeep_vm
-./ubuntu-autoinstall/vagrant-base/patch_libvirt_graphics.sh "dev vms/gaspeep"
+./toolbox/libvirt/enable_3d_graphics.sh gaspeep
+./toolbox/libvirt/enable_3d_graphics.sh gaspeep_vm
+./toolbox/libvirt/enable_3d_graphics.sh "dev vms/gaspeep"
 ```
 
-The script patches the libvirt domain XML to use the separate SPICE socket, `egl-headless`, and virtio video configuration, then restarts or starts the VM so the change takes effect.
+The command patches the libvirt domain XML to use the separate SPICE socket, `egl-headless`, and virtio video configuration, then restarts or starts the VM so the change takes effect.
 
 ## Repository Structure
 - **bootstrap.sh**: Entry point script for setting up the environment.
