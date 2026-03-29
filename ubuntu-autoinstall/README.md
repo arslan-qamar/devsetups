@@ -29,8 +29,9 @@ Run the bootstrap script to create the Packer VM image:
 This script will:
 1. Prompt you to create a custom password for the 'ubuntu' user
 2. Generate an SSH key pair (vagrant_custom_key) for secure authentication
-3. Create the `user-data` file with your custom settings
-4. Run Packer to build the VM image with SPICE guest integration for automatic display resize
+3. Let you optionally verify the selected Ubuntu ISO with a SHA256 checksum before the build
+4. Create the `user-data` file with your custom settings
+5. Run Packer to build the VM image with SPICE guest integration for automatic display resize
 
 Once the `ubuntu-dev.box` is built, add it to Vagrant using the generated metadata file instead of the raw box archive:
 

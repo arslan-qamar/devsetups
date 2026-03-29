@@ -14,12 +14,12 @@ packer {
 
 variable "iso_url" {
   type    = string
-  default = "file:///media/arslan/Ubuntu Data/ISO/ubuntu-24.04.2-desktop-amd64.iso"
+  default = "file:///home/arslan/Downloads/ubuntu-24.04.4-desktop-amd64.iso"
 }
 
 variable "iso_checksum" {
   type    = string
-  default = "sha256:d7fe3d6a0419667d2f8eff12796996328daa2d4f90cd9f87aa9371b362f987bf"
+  default = "sha256:3a4c9877b483ab46d7c3fbe165a0db275e1ae3cfe56a5657e5a47c2f99a99d1e"
 }
 
 variable "box_name" {

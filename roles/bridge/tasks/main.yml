@@ -1,0 +1,147 @@
+- name: Check if nmcli is available
+  command: nmcli --version
+  register: nmcli_check
+  changed_when: false
+  failed_when: false
+  when: state == 'present'
+
+- name: Wait for NetworkManager to be ready
+  command: nmcli general status
+  register: libvirt_nm_ready
+  until: libvirt_nm_ready.rc == 0
+  retries: 10
+  delay: 3
+  changed_when: false
+  failed_when: false
+  become: yes
+  environment:
+    DBUS_SYSTEM_BUS_ADDRESS: "unix:path=/run/dbus/system_bus_socket"
+  when:
+    - state == 'present'
+    - nmcli_check.rc == 0
+
+- name: Determine uplink interface for bridge
+  set_fact:
+    libvirt_bridge_uplink: "{{ libvirt_bridge_uplink_interface | default(ansible_default_ipv4.interface | default('')) }}"
+  when:
+    - state == 'present'
+    - libvirt_configure_host_bridge | default(true)
+    - nmcli_check.rc == 0
+
+- name: Get active NM connection for bridge uplink
+  shell: |
+    nmcli -t -f NAME,DEVICE connection show --active | awk -F: '$2=="{{ libvirt_bridge_uplink }}" {print $1; exit}'
+  register: libvirt_uplink_connection
+  changed_when: false
+  failed_when: false
+  environment:
+    DBUS_SYSTEM_BUS_ADDRESS: "unix:path=/run/dbus/system_bus_socket"
+  when:
+    - state == 'present'
+    - libvirt_configure_host_bridge | default(true)
+    - nmcli_check.rc == 0
+    - libvirt_bridge_uplink | length > 0
+
+- name: Check if br0 bridge connection already exists
+  command: nmcli connection show {{ libvirt_bridge_name | default('br0') }}
+  register: libvirt_br0_check
+  changed_when: false
+  failed_when: false
+  become: yes
+  environment:
+    DBUS_SYSTEM_BUS_ADDRESS: "unix:path=/run/dbus/system_bus_socket"
+  when:
+    - state == 'present'
+    - libvirt_configure_host_bridge | default(true)
+    - nmcli_check.rc == 0
+    - libvirt_bridge_uplink | length > 0
+    - libvirt_uplink_connection.stdout | length > 0
+
+- name: Ensure br0 bridge connection exists
+  command: nmcli connection add type bridge ifname {{ libvirt_bridge_name | default('br0') }} con-name {{ libvirt_bridge_name | default('br0') }}
+  register: libvirt_br0_add
+  changed_when: libvirt_br0_add.rc == 0
+  failed_when: libvirt_br0_add.rc != 0 and ('already exists' not in (libvirt_br0_add.stderr | default('') | lower))
+  retries: 5
+  delay: 5
+  until: libvirt_br0_add.rc == 0 or ('already exists' in (libvirt_br0_add.stderr | default('') | lower))
+  become: yes
+  environment:
+    DBUS_SYSTEM_BUS_ADDRESS: "unix:path=/run/dbus/system_bus_socket"
+  when:
+    - state == 'present'
+    - libvirt_configure_host_bridge | default(true)
+    - nmcli_check.rc == 0
+    - libvirt_bridge_uplink | length > 0
+    - libvirt_uplink_connection.stdout | length > 0
+    - (libvirt_br0_check.rc | default(1)) != 0
+
+- name: Configure br0 networking
+  command: nmcli connection modify {{ libvirt_bridge_name | default('br0') }} bridge.stp no ipv4.method auto ipv6.method auto connection.autoconnect yes
+  become: yes
+  environment:
+    DBUS_SYSTEM_BUS_ADDRESS: "unix:path=/run/dbus/system_bus_socket"
+  when:
+    - state == 'present'
+    - libvirt_configure_host_bridge | default(true)
+    - nmcli_check.rc == 0
+    - libvirt_bridge_uplink | length > 0
+    - libvirt_uplink_connection.stdout | length > 0
+
+- name: Attach uplink connection to br0
+  shell: nmcli connection modify "{{ libvirt_uplink_connection.stdout }}" connection.master {{ libvirt_bridge_name | default('br0') }} connection.slave-type bridge
+  become: yes
+  environment:
+    DBUS_SYSTEM_BUS_ADDRESS: "unix:path=/run/dbus/system_bus_socket"
+  when:
+    - state == 'present'
+    - libvirt_configure_host_bridge | default(true)
+    - nmcli_check.rc == 0
+    - libvirt_bridge_uplink | length > 0
+    - libvirt_uplink_connection.stdout | length > 0
+
+- name: Bring up br0 and uplink slave
+  shell: |
+    nmcli connection up {{ libvirt_bridge_name | default('br0') }} || true
+    nmcli connection up "{{ libvirt_uplink_connection.stdout }}" || true
+  become: yes
+  changed_when: false
+  environment:
+    DBUS_SYSTEM_BUS_ADDRESS: "unix:path=/run/dbus/system_bus_socket"
+  when:
+    - state == 'present'
+    - libvirt_configure_host_bridge | default(true)
+    - nmcli_check.rc == 0
+    - libvirt_bridge_uplink | length > 0
+    - libvirt_uplink_connection.stdout | length > 0
+
+- name: Warn when bridge automation was skipped
+  debug:
+    msg: "Skipping host bridge automation (nmcli missing, no uplink detected, or no active NM connection for uplink)."
+  when:
+    - state == 'present'
+    - libvirt_configure_host_bridge | default(true)
+    - (nmcli_check.rc | default(1)) != 0 or
+      (libvirt_bridge_uplink | default('') | length == 0) or
+      (libvirt_uplink_connection.stdout | default('') | length == 0)
+
+- name: Remove br0 bridge connection
+  command: nmcli connection delete {{ libvirt_bridge_name | default('br0') }}
+  register: libvirt_br0_delete
+  changed_when: libvirt_br0_delete.rc == 0
+  failed_when: false
+  become: yes
+  when:
+    - state == 'absent'
+    - libvirt_configure_host_bridge | default(true)
+
+- name: Restore uplink from bridge on removal
+  shell: |
+    conn=$(nmcli -t -f NAME,TYPE connection show | awk -F: '$2=="bridge-slave" {print $1}' | head -n1)
+    [ -n "$conn" ] && nmcli connection modify "$conn" connection.master "" connection.slave-type "" && nmcli connection up "$conn" || true
+  become: yes
+  changed_when: false
+  failed_when: false
+  when:
+    - state == 'absent'
+    - libvirt_configure_host_bridge | default(true)

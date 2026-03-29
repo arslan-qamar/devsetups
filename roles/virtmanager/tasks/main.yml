@@ -1,6 +1,16 @@
+- name: Refresh apt package index
+  command: apt-get update
+  register: virtmanager_apt_update
+  changed_when: false
+  retries: 5
+  delay: 6
+  until: virtmanager_apt_update.rc == 0
+  become: yes
+  when: state == 'present'
+
 - name: "{{ 'Remove' if state == 'absent' else 'Install' }} virt-manager"
   apt:
     name: virt-manager
     state: "{{ state }}"
-    update_cache: yes
+    force_apt_get: yes
   become: yes

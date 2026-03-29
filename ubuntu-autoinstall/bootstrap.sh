@@ -27,6 +27,70 @@ run_as_vagrant_user() {
   fi
 }
 
+get_user_home() {
+  local username=$1
+
+  getent passwd "$username" | cut -d: -f6
+}
+
+prompt_yes_no() {
+  local prompt=$1
+  local default_answer=${2:-false}
+  local response
+
+  while true; do
+    if [[ "$default_answer" == true ]]; then
+      read -r -p "${prompt} [Y/n]: " response
+      response=${response:-y}
+    else
+      read -r -p "${prompt} [y/N]: " response
+      response=${response:-n}
+    fi
+
+    case "${response,,}" in
+      y|yes)
+        return 0
+        ;;
+      n|no)
+        return 1
+        ;;
+      *)
+        echo "Please answer yes or no."
+        ;;
+    esac
+  done
+}
+
+find_latest_matching_file() {
+  local search_dir=$1
+  shift
+
+  local latest_path=""
+  local latest_mtime=""
+  local candidate
+  local candidate_mtime
+  local pattern
+
+  [[ -d "$search_dir" ]] || return 1
+
+  shopt -s nullglob
+  for pattern in "$@"; do
+    for candidate in "$search_dir"/$pattern; do
+      [[ -f "$candidate" ]] || continue
+
+      candidate_mtime=$(stat -c %Y "$candidate")
+      if [[ -z "$latest_path" || "$candidate_mtime" -gt "$latest_mtime" ]]; then
+        latest_path="$candidate"
+        latest_mtime="$candidate_mtime"
+      fi
+    done
+  done
+  shopt -u nullglob
+
+  [[ -n "$latest_path" ]] || return 1
+  printf '%s\n' "$latest_path"
+}
+
 bootstrap_host_dependencies() {
   require_command ansible-playbook
 
@@ -175,16 +239,16 @@ memory=${memory:-16384}
 read -p "Enter disk size in MB (default: 150240 for 150GB): " disk_size
 disk_size=${disk_size:-150240}
 
-default_iso_path="/media/${VAGRANT_USER}/Ubuntu Data/ISO/ubuntu-24.04.2-desktop-amd64.iso"
-if [[ ! -f "$default_iso_path" ]]; then
-  for candidate in \
-    "$HOME/Downloads/ubuntu-24.04.2-desktop-amd64.iso" \
-    "/media/${VAGRANT_USER}/Ubuntu_Data/ISO/ubuntu-24.04.2-desktop-amd64.iso"; do
-    if [[ -f "$candidate" ]]; then
-      default_iso_path="$candidate"
-      break
-    fi
-  done
+vagrant_user_home=$(get_user_home "$VAGRANT_USER")
+default_iso_path="${vagrant_user_home}/Downloads/ubuntu-24.04-desktop-amd64.iso"
+
+if latest_download_iso=$(find_latest_matching_file \
+  "${vagrant_user_home}/Downloads" \
+  'ubuntu-*-desktop-amd64.iso' \
+  'ubuntu-*.iso'); then
+  default_iso_path="$latest_download_iso"
+elif [[ -f "/media/${VAGRANT_USER}/Ubuntu_Data/ISO/ubuntu-24.04.4-desktop-amd64.iso" ]]; then
+  default_iso_path="/media/${VAGRANT_USER}/Ubuntu_Data/ISO/ubuntu-24.04.4-desktop-amd64.iso"
 fi
 
 read -r -p "Enter Ubuntu ISO path or file:// URL (default: ${default_iso_path}): " iso_input
@@ -201,8 +265,20 @@ fi
 
 if [[ ! -f "$iso_local_path" ]]; then
   echo "Ubuntu ISO not found at: $iso_local_path" >&2
-  echo "Provide a valid local ISO file path, for example: /home/${VAGRANT_USER}/Downloads/ubuntu-24.04.2-desktop-amd64.iso" >&2
+  echo "Provide a valid local ISO file path, for example: ${vagrant_user_home}/Downloads/ubuntu-24.04.2-desktop-amd64.iso" >&2
   exit 1
+fi
+
+iso_checksum="none"
+if prompt_yes_no "Verify the ISO checksum before build?" false; then
+  read -r -p "Enter expected ISO SHA256 checksum: " iso_checksum_input
+
+  if [[ -z "$iso_checksum_input" ]]; then
+    echo "ISO checksum is required when verification is enabled." >&2
+    exit 1
+  fi
+
+  iso_checksum="sha256:${iso_checksum_input#sha256:}"
 fi
 
 hashed_password=$(echo "$ubuntu_password" | mkpasswd --method=SHA-512 --stdin)
@@ -229,6 +305,7 @@ packer init packer.pkr.hcl
 echo "[+] Building ${box_name}.box with Packer..."
 packer build \
   -var "iso_url=$iso_url" \
+  -var "iso_checksum=$iso_checksum" \
   -var "box_name=$box_name" \
   -var "cpus=$cpus" \
   -var "memory=$memory" \

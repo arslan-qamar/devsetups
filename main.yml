@@ -70,3 +70,6 @@
 
     - role: microk8s
       tags: microk8s
+
+    - role: bridge
+      tags: bridge
