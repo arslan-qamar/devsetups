@@ -51,7 +51,7 @@ Vagrant.configure("2") do |config|
   # 06. Install tools
   config.vm.provision "shell", name: "06_install_tools", privileged: false,
     env: {
-      "INSTALL_TOOLS_TAGS" => "vscode,dotnet,rider,microk8s",
+      "INSTALL_TOOLS_TAGS" => "vscode,dotnet,microk8s",
     },
     path: "../provision_06_install_tools.sh"
    
@@ -64,7 +64,9 @@ Vagrant.configure("2") do |config|
     libvirt.memory = 6176
     libvirt.graphics_type = "spice"
     libvirt.graphics_autoport = true
+    libvirt.keymap = "en-us"
     libvirt.video_type = "virtio"
+    libvirt.video_vram = 4096
     libvirt.sound_type = "ich9"
     libvirt.usb_controller :model => "qemu-xhci"
     2.times do

@@ -25,6 +25,23 @@ ansible-playbook -i '<vm-name.local | 192.168.0.*>,' -u ubuntu --ssh-common-args
 
 Replace `<vm-name.local | 192.168.0.*>` with your VM's Name or VM's IP address. This command uses the specified SSH config and runs the playbook with the `microk8s` tag. The `-K` flag will prompt for the sudo password if needed.
 
+## Enable 3D Graphics After Provisioning
+To enable the custom libvirt 3D graphics layout on a VM after it has already been created and provisioned, run:
+
+```bash
+./ubuntu-autoinstall/vagrant-base/patch_libvirt_graphics.sh <domain|vm-name|vm-directory>
+```
+
+Examples:
+
+```bash
+./ubuntu-autoinstall/vagrant-base/patch_libvirt_graphics.sh gaspeep
+./ubuntu-autoinstall/vagrant-base/patch_libvirt_graphics.sh gaspeep_vm
+./ubuntu-autoinstall/vagrant-base/patch_libvirt_graphics.sh "dev vms/gaspeep"
+```
+
+The script patches the libvirt domain XML to use the separate SPICE socket, `egl-headless`, and virtio video configuration, then restarts or starts the VM so the change takes effect.
+
 ## Repository Structure
 - **bootstrap.sh**: Entry point script for setting up the environment.
 - **roles/**: Contains Ansible roles for various tools and configurations.

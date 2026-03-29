@@ -1,7 +1,6 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
-
 Vagrant.configure("2") do |config|
   config.vm.box = "ubuntu-dev"
   # Set VM name to the folder name where `vagrant up` is run
@@ -44,7 +43,9 @@ Vagrant.configure("2") do |config|
     libvirt.memory = 16384
     libvirt.graphics_type = "spice"
     libvirt.graphics_autoport = true
+    libvirt.keymap = "en-us"
     libvirt.video_type = "virtio"
+    libvirt.video_vram = 4096
     libvirt.channel type: 'spicevmc', target_name: 'com.redhat.spice.0', target_type: 'virtio'
   end
 
