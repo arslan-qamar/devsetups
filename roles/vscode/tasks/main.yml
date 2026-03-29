@@ -46,11 +46,26 @@
   command:
     cmd: "code --install-extension {{ item }} --no-sandbox --user-data-dir /home/{{ ansible_env.USER }}/.config/Code"
   loop:
-    - GitHub.copilot
+    - github.copilot-chat
     - ms-python.python
     - esbenp.prettier-vscode
     - ms-dotnettools.csdevkit
     - ms-dotnettools.csharp
+    - openai.chatgpt
+    - anthropic.claude-code
+    - mechatroner.rainbow-csv
+    - doppler.doppler-vscode
+    - ms-ossdata.vscode-pgsql
+    - github.vscode-github-actions
+    - github.remotehub
+    - ms-playwright.playwright
+    - golang.go
+    - orta.vscode-jest
+    - ms-azuretools.vscode-docker
+    - grafana.grafana-vscode
+    - redhat.ansible
+    - elastic.elastic-docs-v3-utilities
+
   when:
     - state == 'present'
     - item not in vscode_extensions_installed.stdout_lines
