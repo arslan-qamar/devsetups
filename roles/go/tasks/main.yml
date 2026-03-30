@@ -1,0 +1,114 @@
+---
+- name: Ensure Go architecture is supported
+  assert:
+    that:
+      - ansible_architecture in go_arch_map
+    fail_msg: "Unsupported architecture for Go install: {{ ansible_architecture }}"
+  when: state == 'present'
+
+- name: Gather installed upstream Go version
+  command: "{{ go_install_dir }}/bin/go version"
+  register: go_installed_version
+  changed_when: false
+  failed_when: false
+  when: state == 'present'
+
+- name: Remove distro Go package to avoid older binaries shadowing the pinned version
+  become: true
+  apt:
+    name: "{{ go_apt_package_name }}"
+    state: absent
+    purge: yes
+    update_cache: yes
+    dpkg_options: 'force-confold,force-confdef'
+    lock_timeout: 60
+  when: state == 'present'
+
+- name: Download Go archive
+  get_url:
+    url: "{{ go_download_base_url }}/go{{ go_version }}.linux-{{ go_arch_map[ansible_architecture] }}.tar.gz"
+    dest: "/tmp/go{{ go_version }}.linux-{{ go_arch_map[ansible_architecture] }}.tar.gz"
+    mode: '0644'
+  become: true
+  when:
+    - state == 'present'
+    - go_installed_version.stdout is not search('go' ~ go_version ~ ' ')
+
+- name: Remove existing Go installation before upgrade
+  file:
+    path: "{{ go_install_dir }}"
+    state: absent
+  become: true
+  when:
+    - state == 'present'
+    - go_installed_version.stdout is not search('go' ~ go_version ~ ' ')
+
+- name: Install pinned Go release
+  unarchive:
+    src: "/tmp/go{{ go_version }}.linux-{{ go_arch_map[ansible_architecture] }}.tar.gz"
+    dest: /usr/local
+    remote_src: true
+  become: true
+  when:
+    - state == 'present'
+    - go_installed_version.stdout is not search('go' ~ go_version ~ ' ')
+
+- name: Ensure Go binary symlink is present
+  file:
+    src: "{{ go_install_dir }}/bin/go"
+    dest: "{{ go_symlink_dir }}/go"
+    state: link
+    force: true
+  become: true
+  when: state == 'present'
+
+- name: Ensure gofmt symlink is present
+  file:
+    src: "{{ go_install_dir }}/bin/gofmt"
+    dest: "{{ go_symlink_dir }}/gofmt"
+    state: link
+    force: true
+  become: true
+  when: state == 'present'
+
+- name: Verify installed Go version
+  command: "{{ go_symlink_dir }}/go version"
+  register: go_installed_version_after_install
+  changed_when: false
+  when: state == 'present'
+
+- name: Ensure pinned Go version is installed
+  assert:
+    that:
+      - go_installed_version_after_install.stdout is search('go' ~ go_version ~ ' ')
+    fail_msg: "Expected Go {{ go_version }}, got: {{ go_installed_version_after_install.stdout | default('not installed') }}"
+  when: state == 'present'
+
+- name: Remove downloaded Go archive after install
+  file:
+    path: "/tmp/go{{ go_version }}.linux-{{ go_arch_map[ansible_architecture] }}.tar.gz"
+    state: absent
+  become: true
+  when: state == 'present'
+
+- name: Remove Go
+  become: true
+  file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - "{{ go_install_dir }}"
+    - "{{ go_symlink_dir }}/go"
+    - "{{ go_symlink_dir }}/gofmt"
+  when: state == 'absent'
+
+- name: Remove distro Go package
+  become: true
+  apt:
+    name: "{{ go_apt_package_name }}"
+    state: absent
+    purge: yes
+    update_cache: yes
+    dpkg_options: 'force-confold,force-confdef'
+    lock_timeout: 60
+  when: state == 'absent'

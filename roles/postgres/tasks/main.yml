@@ -1,7 +1,7 @@
 ---
 - name: Ensure PostgreSQL packages are {{ state }}
   apt:
-    name: "{{ ['postgresql'] if state == 'present' else ['postgresql', 'postgresql-[0-9]*'] }}"
+    name: "{{ ['postgresql', 'postgis', 'postgresql-postgis'] if state == 'present' else ['postgresql', 'postgresql-[0-9]*', 'postgis', 'postgresql-postgis', 'postgresql-[0-9]*-postgis-3'] }}"
     state: "{{ state }}"
     update_cache: "{{ state == 'present' }}"
     purge: no
@@ -105,12 +105,116 @@
       Online PostgreSQL clusters: {{ postgres_online_clusters_after_start.stdout_lines | join(', ') }}
   when: state == 'present'
 
+- name: Gather PostgreSQL cluster versions for PostGIS packages
+  set_fact:
+    postgres_cluster_versions: >-
+      {{
+        postgres_clusters_after_start.stdout_lines
+        | map('split')
+        | map('first')
+        | unique
+        | list
+      }}
+  when: state == 'present'
+
+- name: Ensure PostGIS packages are installed for PostgreSQL cluster versions
+  apt:
+    name: "postgresql-{{ item }}-postgis-3"
+    state: present
+  loop: "{{ postgres_cluster_versions }}"
+  become: yes
+  when:
+    - state == 'present'
+    - postgres_cluster_versions | length > 0
+
+- name: Prompt for PostgreSQL password when requested
+  pause:
+    prompt: Enter password for postgres database user
+    echo: no
+  register: postgres_password_prompt_result
+  no_log: true
+  when:
+    - state == 'present'
+    - postgres_prompt_for_password | bool
+    - postgres_password | length == 0
+
+- name: Resolve PostgreSQL password input
+  set_fact:
+    postgres_effective_password: >-
+      {{
+        postgres_password
+        if postgres_password | length > 0
+        else (
+          postgres_password_prompt_result.user_input
+          | default(postgres_default_password)
+        )
+      }}
+  no_log: true
+  when: state == 'present'
+
+- name: Ensure PostgreSQL password input is non-empty
+  assert:
+    that:
+      - postgres_effective_password | string | length > 0
+    fail_msg: PostgreSQL password must resolve to a non-empty value.
+  no_log: true
+  when: state == 'present'
+
 - name: Verify PostgreSQL accepts local connections
   command: psql template1 -c "SELECT 1;"
   become: yes
   become_user: postgres
   changed_when: false
   when: state == 'present'
+
+- name: Gather PostgreSQL port for password validation
+  command: psql -tAc "SHOW port;"
+  register: postgres_runtime_port
+  become: yes
+  become_user: postgres
+  changed_when: false
+  when:
+    - state == 'present'
+    - postgres_effective_password | length > 0
+
+- name: Ensure PostgreSQL postgres user password is set
+  command:
+    argv:
+      - psql
+      - -v
+      - ON_ERROR_STOP=1
+      - -d
+      - postgres
+      - -c
+      - "ALTER ROLE postgres WITH PASSWORD '{{ postgres_effective_password | replace(\"'\", \"''\") }}';"
+  become: yes
+  become_user: postgres
+  no_log: true
+  when:
+    - state == 'present'
+    - postgres_effective_password | length > 0
+
+- name: Verify PostgreSQL password authentication over TCP
+  command:
+    argv:
+      - psql
+      - -h
+      - 127.0.0.1
+      - -p
+      - "{{ postgres_runtime_port.stdout | trim }}"
+      - -U
+      - postgres
+      - -d
+      - postgres
+      - -tAc
+      - SELECT 1;
+  environment:
+    PGPASSWORD: "{{ postgres_effective_password }}"
+  changed_when: false
+  no_log: true
+  when:
+    - state == 'present'
+    - postgres_effective_password | length > 0
 
 - name: Gather PostgreSQL data directories after removal
   shell: find /var/lib/postgresql -mindepth 2 -maxdepth 2 -type d | sort

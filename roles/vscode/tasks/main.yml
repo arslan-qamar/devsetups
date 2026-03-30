@@ -66,6 +66,7 @@
     - redhat.ansible
     - elastic.elastic-docs-v3-utilities
     - ms-vscode.makefile-tools
+    - ms-vscode.vscode-speech
 
   when:
     - state == 'present'

@@ -1,0 +1,4 @@
+---
+postgres_password: ""
+postgres_prompt_for_password: false
+postgres_default_password: "postgres"

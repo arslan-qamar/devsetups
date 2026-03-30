@@ -4,4 +4,4 @@
 ansible-playbook -vvv main.yml -i "localhost" --connection="localhost" --extra-vars "state=present" -t="nodejs" -K
 ```
 
-This role installs Node.js from the NodeSource repository instead of Ubuntu's default package. By default it tracks the current major line configured in `roles/nodejs/vars/main.yml`, which is set to Node.js 25.
+This role installs Node.js from the NodeSource repository instead of Ubuntu's default package. By default it tracks the current major line configured in `roles/nodejs/vars/main.yml`, which is set to Node.js 25, and upgrades an existing `nodejs` package to the latest available package in that major line.

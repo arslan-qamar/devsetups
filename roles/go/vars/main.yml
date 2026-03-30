@@ -1,0 +1,11 @@
+---
+go_apt_package_name: golang-go
+go_version: "1.26.1"
+go_install_dir: /usr/local/go
+go_symlink_dir: /usr/local/bin
+go_download_base_url: https://go.dev/dl
+go_arch_map:
+  x86_64: amd64
+  amd64: amd64
+  aarch64: arm64
+  arm64: arm64

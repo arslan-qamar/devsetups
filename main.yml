@@ -8,6 +8,9 @@
     - role: nodejs
       tags: nodejs
 
+    - role: go
+      tags: go
+
     - role: devbox
       tags: devbox
 
