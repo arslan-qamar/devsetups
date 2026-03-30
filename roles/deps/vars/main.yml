@@ -4,6 +4,5 @@ deps_to_install:
   - jq
   - yq
   - whois
-  - nodejs
-  - npm
+  - rg
   

@@ -1,0 +1,109 @@
+---
+- name: Install NodeSource repository prerequisites
+  become: true
+  apt:
+    name:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - gnupg
+    state: present
+    update_cache: yes
+  when: state == 'present'
+
+- name: Ensure /usr/share/keyrings directory exists
+  become: true
+  file:
+    path: /usr/share/keyrings
+    state: directory
+    mode: '0755'
+  when: state == 'present'
+
+- name: Download NodeSource signing key
+  become: true
+  shell: |
+    curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /usr/share/keyrings/nodesource.gpg
+  args:
+    creates: /usr/share/keyrings/nodesource.gpg
+  when: state == 'present'
+
+- name: Set permissions on NodeSource signing key
+  become: true
+  file:
+    path: /usr/share/keyrings/nodesource.gpg
+    mode: '0644'
+    state: file
+  when: state == 'present'
+
+- name: Configure NodeSource repository
+  become: true
+  copy:
+    dest: /etc/apt/sources.list.d/nodesource.sources
+    mode: '0644'
+    content: |
+      Types: deb
+      URIs: https://deb.nodesource.com/node_{{ nodejs_major_version }}.x
+      Suites: nodistro
+      Components: main
+      Architectures: {{ nodejs_repo_architecture }}
+      Signed-By: /usr/share/keyrings/nodesource.gpg
+  when: state == 'present'
+
+- name: Pin Node.js packages to the NodeSource origin
+  become: true
+  copy:
+    dest: /etc/apt/preferences.d/nodejs
+    mode: '0644'
+    content: |
+      Package: nodejs
+      Pin: origin deb.nodesource.com
+      Pin-Priority: 600
+  when: state == 'present'
+
+- name: Update apt cache after adding the NodeSource repository
+  become: true
+  apt:
+    update_cache: yes
+  when: state == 'present'
+
+- name: Ensure Node.js {{ nodejs_major_version }} is installed from NodeSource
+  become: true
+  apt:
+    name: nodejs
+    state: present
+  when: state == 'present'
+
+- name: Remove Node.js
+  become: true
+  apt:
+    name: nodejs
+    state: absent
+    purge: true
+  when: state == 'absent'
+
+- name: Remove NodeSource repository
+  become: true
+  file:
+    path: /etc/apt/sources.list.d/nodesource.sources
+    state: absent
+  when: state == 'absent'
+
+- name: Remove Node.js apt pinning
+  become: true
+  file:
+    path: /etc/apt/preferences.d/nodejs
+    state: absent
+  when: state == 'absent'
+
+- name: Remove NodeSource signing key
+  become: true
+  file:
+    path: /usr/share/keyrings/nodesource.gpg
+    state: absent
+  when: state == 'absent'
+
+- name: Update apt cache after removing the NodeSource repository
+  become: true
+  apt:
+    update_cache: yes
+  when: state == 'absent'

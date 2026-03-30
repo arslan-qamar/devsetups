@@ -46,12 +46,15 @@ The command patches the libvirt domain XML to use the separate SPICE socket, `eg
 - **bootstrap.sh**: Entry point script for setting up the environment.
 - **roles/**: Contains Ansible roles for various tools and configurations.
   - **deps/**: Handles dependencies.
+  - **nodejs/**: Installs Node.js from NodeSource.
   - **devbox/**: Sets up the development box.
   - **docker/**: Configures Docker.
   - **githubcli/**: Installs and configures GitHub CLI.
   - **vscode/**: Sets up Visual Studio Code.
   - **zsh/**: Configures Zsh shell.
 - **ubuntu-autoinstall/**: Contains files for Ubuntu auto-installation and Vagrant base setup.
+
+To install Node.js on its own, run the playbook with the `nodejs` tag.
 
 ## How It Works
 1. **Provisioning**: Vagrant is used to create and manage virtual machines.

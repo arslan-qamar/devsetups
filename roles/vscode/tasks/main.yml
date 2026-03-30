@@ -65,6 +65,7 @@
     - grafana.grafana-vscode
     - redhat.ansible
     - elastic.elastic-docs-v3-utilities
+    - ms-vscode.makefile-tools
 
   when:
     - state == 'present'
