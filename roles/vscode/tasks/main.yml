@@ -55,7 +55,6 @@
     - anthropic.claude-code
     - mechatroner.rainbow-csv
     - doppler.doppler-vscode
-    - ms-ossdata.vscode-pgsql
     - github.vscode-github-actions
     - github.remotehub
     - ms-playwright.playwright
@@ -67,6 +66,7 @@
     - elastic.elastic-docs-v3-utilities
     - ms-vscode.makefile-tools
     - ms-vscode.vscode-speech
+    - cweijan.vscode-postgresql-client2
 
   when:
     - state == 'present'
