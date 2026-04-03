@@ -20,6 +20,9 @@
     - role: vscode
       tags: vscode  
 
+    - role: postman
+      tags: postman
+
     - role: docker
       tags: docker   
 

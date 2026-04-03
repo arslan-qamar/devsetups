@@ -1,0 +1,82 @@
+---
+- name: Resolve Postman download architecture
+  set_fact:
+    postman_download_arch: "{{ postman_architecture_map.get(ansible_architecture, '') }}"
+  when: state == 'present'
+
+- name: Ensure Postman architecture is supported
+  assert:
+    that:
+      - postman_download_arch | length > 0
+    fail_msg: "Unsupported architecture for Postman installation: {{ ansible_architecture }}"
+  when: state == 'present'
+
+- name: Download Postman archive
+  become: true
+  get_url:
+    url: "https://dl.pstmn.io/download/latest/{{ postman_download_arch }}"
+    dest: "{{ postman_archive_path }}"
+    mode: '0644'
+  when: state == 'present'
+
+- name: Install Postman
+  become: true
+  unarchive:
+    src: "{{ postman_archive_path }}"
+    dest: /opt
+    remote_src: true
+    creates: "{{ postman_install_dir }}/Postman"
+  when: state == 'present'
+
+- name: Ensure Postman launcher symlink exists
+  become: true
+  file:
+    src: "{{ postman_install_dir }}/Postman"
+    dest: "{{ postman_bin_path }}"
+    state: link
+  when: state == 'present'
+
+- name: Ensure Postman desktop entry exists
+  become: true
+  copy:
+    dest: "{{ postman_desktop_path }}"
+    mode: '0644'
+    content: |
+      [Desktop Entry]
+      Type=Application
+      Name=Postman
+      Comment=API platform for building and using APIs
+      Exec={{ postman_install_dir }}/Postman
+      Icon={{ postman_install_dir }}/app/resources/app/assets/icon.png
+      Terminal=false
+      Categories=Development;
+      StartupWMClass=Postman
+  when: state == 'present'
+
+- name: Remove Postman desktop entry
+  become: true
+  file:
+    path: "{{ postman_desktop_path }}"
+    state: absent
+  when: state == 'absent'
+
+- name: Remove Postman launcher symlink
+  become: true
+  file:
+    path: "{{ postman_bin_path }}"
+    state: absent
+  when: state == 'absent'
+
+- name: Remove Postman installation directory
+  become: true
+  file:
+    path: "{{ postman_install_dir }}"
+    state: absent
+  when: state == 'absent'
+
+- name: Remove Postman archive
+  become: true
+  file:
+    path: "{{ postman_archive_path }}"
+    state: absent
+  when: state == 'absent'
