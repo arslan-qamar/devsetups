@@ -1,0 +1,13 @@
+---
+state: "present"
+
+postman_architecture_map:
+  x86_64: "linux64"
+  amd64: "linux64"
+  aarch64: "linux_arm64"
+  arm64: "linux_arm64"
+
+postman_archive_path: "/tmp/postman.tar.gz"
+postman_install_dir: "/opt/Postman"
+postman_bin_path: "/usr/local/bin/postman"
+postman_desktop_path: "/usr/share/applications/postman.desktop"
