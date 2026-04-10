@@ -1,15 +1,144 @@
 ---
-- name: Install Rider via snap
-  become: true
-  snap:
-    name: rider
-    classic: yes
-    state: present
+- name: Resolve Rider download architecture
+  ansible.builtin.set_fact:
+    rider_download_key: "{{ (rider_architecture_map | default({'x86_64': 'linux', 'amd64': 'linux', 'aarch64': 'linuxARM64', 'arm64': 'linuxARM64'})).get(ansible_architecture, '') }}"
   when: state == 'present'
 
-- name: Remove Rider via snap if state=absent
+- name: Ensure Rider architecture is supported
+  ansible.builtin.assert:
+    that:
+      - rider_download_key | length > 0
+    fail_msg: "Unsupported architecture for Rider installation: {{ ansible_architecture }}"
+  when: state == 'present'
+
+- name: Fetch latest Rider release metadata
+  ansible.builtin.uri:
+    url: "{{ rider_releases_api_url | default('https://data.services.jetbrains.com/products/releases?code=RD&latest=true&type=release') }}"
+    return_content: true
+  register: rider_release_metadata
+  when: state == 'present'
+
+- name: Resolve Rider download details
+  ansible.builtin.set_fact:
+    rider_release: "{{ rider_release_metadata.json.RD[0] }}"
+    rider_download_url: "{{ rider_release_metadata.json.RD[0].downloads[rider_download_key].link }}"
+    rider_archive_path: "{{ rider_archive_path | default('/tmp/jetbrains-rider.tar.gz') }}"
+    rider_install_dir: "{{ rider_install_dir | default('/opt/jetbrains-rider') }}"
+    rider_bin_path: "{{ rider_bin_path | default('/usr/local/bin/rider') }}"
+    rider_desktop_path: "{{ rider_desktop_path | default('/usr/share/applications/jetbrains-rider.desktop') }}"
+  when: state == 'present'
+
+- name: Read installed Rider build number
+  ansible.builtin.slurp:
+    src: "{{ rider_install_dir }}/build.txt"
+  register: rider_installed_build_file
+  when:
+    - state == 'present'
+  failed_when: false
+
+- name: Resolve Rider install state
+  ansible.builtin.set_fact:
+    rider_installed_build: "{{ (rider_installed_build_file.content | default('') | b64decode | trim) if (rider_installed_build_file is defined and rider_installed_build_file.content is defined) else '' }}"
+    rider_target_build: "{{ rider_release.build }}"
+  when: state == 'present'
+
+- name: Download Rider archive
   become: true
-  snap:
-    name: rider
+  ansible.builtin.get_url:
+    url: "{{ rider_download_url }}"
+    dest: "{{ rider_archive_path }}"
+    mode: '0644'
+  when:
+    - state == 'present'
+    - rider_installed_build != rider_target_build
+
+- name: Remove existing Rider installation before upgrade
+  become: true
+  ansible.builtin.file:
+    path: "{{ rider_install_dir }}"
+    state: absent
+  when:
+    - state == 'present'
+    - rider_installed_build != rider_target_build
+
+- name: Ensure Rider installation directory exists
+  become: true
+  ansible.builtin.file:
+    path: "{{ rider_install_dir }}"
+    state: directory
+    mode: '0755'
+  when: state == 'present'
+
+- name: Install Rider standalone distribution
+  become: true
+  ansible.builtin.unarchive:
+    src: "{{ rider_archive_path }}"
+    dest: "{{ rider_install_dir }}"
+    remote_src: true
+    extra_opts:
+      - --strip-components=1
+  when:
+    - state == 'present'
+    - rider_installed_build != rider_target_build
+
+- name: Ensure Rider launcher symlink exists
+  become: true
+  ansible.builtin.file:
+    src: "{{ rider_install_dir }}/bin/rider.sh"
+    dest: "{{ rider_bin_path }}"
+    state: link
+    force: true
+  when: state == 'present'
+
+- name: Ensure Rider desktop entry exists
+  become: true
+  ansible.builtin.copy:
+    dest: "{{ rider_desktop_path }}"
+    mode: '0644'
+    content: |
+      [Desktop Entry]
+      Version=1.0
+      Type=Application
+      Name=JetBrains Rider
+      Comment=.NET IDE by JetBrains
+      Exec={{ rider_install_dir }}/bin/rider.sh
+      Icon={{ rider_install_dir }}/bin/rider.svg
+      Terminal=false
+      Categories=Development;IDE;
+      StartupWMClass=jetbrains-rider
+  when: state == 'present'
+
+- name: Remove Rider archive after install
+  become: true
+  ansible.builtin.file:
+    path: "{{ rider_archive_path }}"
+    state: absent
+  when: state == 'present'
+
+- name: Remove Rider desktop entry
+  become: true
+  ansible.builtin.file:
+    path: "{{ rider_desktop_path | default('/usr/share/applications/jetbrains-rider.desktop') }}"
+    state: absent
+  when: state == 'absent'
+
+- name: Remove Rider launcher symlink
+  become: true
+  ansible.builtin.file:
+    path: "{{ rider_bin_path | default('/usr/local/bin/rider') }}"
+    state: absent
+  when: state == 'absent'
+
+- name: Remove Rider installation directory
+  become: true
+  ansible.builtin.file:
+    path: "{{ rider_install_dir | default('/opt/jetbrains-rider') }}"
+    state: absent
+  when: state == 'absent'
+
+- name: Remove Rider archive
+  become: true
+  ansible.builtin.file:
+    path: "{{ rider_archive_path | default('/tmp/jetbrains-rider.tar.gz') }}"
     state: absent
   when: state == 'absent'

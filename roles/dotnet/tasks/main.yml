@@ -2,7 +2,10 @@
   become: yes
   apt:
     update_cache: yes
-    cache_valid_time: 3600  
+    cache_valid_time: 3600
+    purge: yes
+    dpkg_options: 'force-confold,force-confdef'
+    lock_timeout: 60  
 
 - name: "{{ 'Remove' if state == 'absent' else 'Setup' }} Dotnet"
   become: yes
