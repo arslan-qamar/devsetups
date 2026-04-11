@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e
+set -euo pipefail
 
 EMAIL="${EMAIL:-ravian720@gmail.com}"
 KEY_PATH="$HOME/.ssh/id_ed25519"
@@ -8,6 +8,9 @@ STATE_DIR="$HOME/.config/devsetups"
 STATE_FILE="$STATE_DIR/host_credentials.env"
 KEY_CREATED="false"
 GPG_IMPORTED_BY_SETUP="false"
+GPG_DIR="$HOME/.gnupg"
+GPG_PASSPHRASE_FILE="$GPG_DIR/git-signing-passphrase"
+GPG_WRAPPER_PATH="$HOME/.local/bin/git-gpg-sign"
 
 read -r -p "Git email [$EMAIL]: " EMAIL_INPUT
 if [ -n "$EMAIL_INPUT" ]; then
@@ -64,6 +67,8 @@ ssh -T git@github.com -o StrictHostKeyChecking=no || true
 
 # Setup GPG signing from Doppler git-creds project
 echo "Setting up Git GPG signing from Doppler..."
+mkdir -p "$GPG_DIR" "$HOME/.local/bin"
+chmod 700 "$GPG_DIR"
 echo "Fetching GPG private key from Doppler..."
 doppler secrets -p git-creds -c dev_personal --json --raw | jq -r '.PRIVKEY.raw' > /tmp/privkey.asc
 IMPORTED_GPG_FINGERPRINT=$(gpg --show-keys --with-colons /tmp/privkey.asc | awk -F: '/^fpr:/ {print $10; exit}')
@@ -71,16 +76,24 @@ if ! gpg --list-secret-keys --with-colons "$IMPORTED_GPG_FINGERPRINT" >/dev/null
   GPG_IMPORTED_BY_SETUP="true"
 fi
 echo "Importing GPG private key..."
+doppler secrets -p git-creds -c dev_personal --json --raw | jq -r '.PASSPHRASE.raw' > "$GPG_PASSPHRASE_FILE"
+chmod 600 "$GPG_PASSPHRASE_FILE"
 gpg --batch --yes --pinentry-mode loopback \
-  --passphrase-file <(doppler secrets -p git-creds -c dev_personal --json --raw | jq -r '.PASSPHRASE.raw') \
+  --passphrase-file "$GPG_PASSPHRASE_FILE" \
   --import /tmp/privkey.asc
 rm -f /tmp/privkey.asc
+cat > "$GPG_WRAPPER_PATH" <<EOF
+#!/bin/bash
+exec gpg --batch --yes --pinentry-mode loopback --passphrase-file "$GPG_PASSPHRASE_FILE" "\$@"
+EOF
+chmod 700 "$GPG_WRAPPER_PATH"
 echo "Extracting GPG key ID..."
 GPG_KEY_ID=$(gpg --list-secret-keys --keyid-format=long | awk '/^sec/{print $2}' | cut -d'/' -f2)
 GPG_FINGERPRINT=$(gpg --with-colons --fingerprint "$GPG_KEY_ID" | awk -F: '/^fpr:/ {print $10; exit}')
 echo "Configuring Git GPG signing with key: $GPG_KEY_ID..."
 git config --global commit.gpgsign true
 git config --global tag.gpgSign true
+git config --global gpg.program "$GPG_WRAPPER_PATH"
 git config --global user.signingkey "$GPG_KEY_ID"
 git config --global rebase.autostash true
 git config --global merge.autostash true
