@@ -66,6 +66,7 @@ Vagrant.configure("2") do |config|
       "REPOSITORY_NAME" => "interactivebrokers2", 
       "DOPPLER_SERVICE_TOKEN_IBKR_PAPER" => ENV["DOPPLER_SERVICE_TOKEN_IBKR_PAPER"],
       "DOPPLER_SERVICE_TOKEN_IBKR_LIVE" => ENV["DOPPLER_SERVICE_TOKEN_IBKR_LIVE"],
+      "DOPPLER_SERVICE_TOKEN_IBKR_TEST" => ENV["DOPPLER_SERVICE_TOKEN_IBKR_TEST"],
     },
     path: "#{ENV['DEV_VMS_BASE_PATH']}/provision_07_setup_project.sh"
 
