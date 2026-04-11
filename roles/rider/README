@@ -3,3 +3,11 @@
 ```shell
 ansible-playbook -vvv main.yml -i "localhost" --connection="localhost" --extra-vars "state=present" -t="rider" -K
 ```
+
+Optional variables:
+
+```shell
+ansible-playbook -vvv main.yml -i "localhost" --connection="localhost" --extra-vars "state=present rider_plugins=['com.github.copilot']" -t="rider" -K
+```
+
+The Rider role resolves plugin installation to the current user when available and falls back to `ubuntu` by default. Override with `rider_plugin_user` if needed.

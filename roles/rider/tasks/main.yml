@@ -4,6 +4,12 @@
     rider_download_key: "{{ (rider_architecture_map | default({'x86_64': 'linux', 'amd64': 'linux', 'aarch64': 'linuxARM64', 'arm64': 'linuxARM64'})).get(ansible_architecture, '') }}"
   when: state == 'present'
 
+- name: Resolve Rider plugin install user
+  ansible.builtin.set_fact:
+    rider_plugin_user_resolved: "{{ rider_plugin_user | default(ansible_env.SUDO_USER | default(ansible_user_id, true), true) | default('ubuntu', true) }}"
+    rider_plugins_resolved: "{{ rider_plugins | default([]) }}"
+  when: state == 'present'
+
 - name: Ensure Rider architecture is supported
   ansible.builtin.assert:
     that:
@@ -107,6 +113,18 @@
       Categories=Development;IDE;
       StartupWMClass=jetbrains-rider
   when: state == 'present'
+
+- name: Install configured Rider plugins
+  become: true
+  become_user: "{{ rider_plugin_user_resolved }}"
+  ansible.builtin.command:
+    cmd: "{{ rider_install_dir }}/bin/rider.sh installPlugins {{ item }}"
+  environment:
+    HOME: "/home/{{ rider_plugin_user_resolved }}"
+  loop: "{{ rider_plugins_resolved }}"
+  when:
+    - state == 'present'
+    - rider_plugins_resolved | length > 0
 
 - name: Remove Rider archive after install
   become: true

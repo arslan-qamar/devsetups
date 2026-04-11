@@ -59,31 +59,21 @@ Vagrant.configure("2") do |config|
     },
     path: "#{ENV['DEV_VMS_BASE_PATH']}/provision_06_install_tools.sh"
 
-  # 07. Install Doppler, Helm, ArgoCD
-  config.vm.provision "shell", name: "07_install_doppler_helm_argocd", privileged: false,
+  # 07. Setup project
+  config.vm.provision "shell", name: "07_setup_project", privileged: false,
    env: {
+      "PROJECT_SETUP_SCRIPT" => "setup.sh", 
+      "REPOSITORY_NAME" => "interactivebrokers2", 
       "DOPPLER_SERVICE_TOKEN_IBKR_PAPER" => ENV["DOPPLER_SERVICE_TOKEN_IBKR_PAPER"],
       "DOPPLER_SERVICE_TOKEN_IBKR_LIVE" => ENV["DOPPLER_SERVICE_TOKEN_IBKR_LIVE"],
-      "DOPPLER_SERVICE_TOKEN_PROD" => ENV["DOPPLER_SERVICE_TOKEN_PROD"],
     },
-    path: "#{ENV['DEV_VMS_BASE_PATH']}/provision_07_install_doppler_helm_argocd.sh"
-  
-  # 08. Install TWS
-  config.vm.provision "shell", name: "08_install_tws", privileged: false,
-    path: "#{ENV['DEV_VMS_BASE_PATH']}/provision_08_install_tws.sh"
-  
-  # 09. Setup GitHub Actions runner
-  config.vm.provision "shell", name: "09_setup_github_actions_runner", privileged: false,
-   env: {
-      "DOPPLER_SERVICE_TOKEN_IBKR_LIVE" => ENV["DOPPLER_SERVICE_TOKEN_IBKR_LIVE"],
-    },   
-    path: "#{ENV['DEV_VMS_BASE_PATH']}/provision_09_setup_github_actions_runner.sh"
+    path: "#{ENV['DEV_VMS_BASE_PATH']}/provision_07_setup_project.sh"
 
-  # 10. Validate setup
-  config.vm.provision "shell", name: "10_validate_setup", privileged: false,
-    path: "#{ENV['DEV_VMS_BASE_PATH']}/provision_10_validate_setup.sh"
+  # Validate basic setup
+  config.vm.provision "shell", name: "validate_setup", privileged: false,
+    path: "#{ENV['DEV_VMS_BASE_PATH']}/provision_validate_setup.sh"
   
-  # 8. IBKR Validation step
+  # IBKR Validation step
   config.vm.provision "shell", name: "IBKR Setup Validation", privileged: false,
     inline: <<-SHELL
       set -e
