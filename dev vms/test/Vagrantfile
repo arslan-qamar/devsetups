@@ -44,7 +44,7 @@ Vagrant.configure("2") do |config|
    
   # 10. Validate setup
   config.vm.provision "shell", name: "10_validate_setup", privileged: false,
-    path: "../provision_10_validate_setup.sh"
+    path: "../provision_validate_setup.sh"
   
   # Add libvirt-specific customizations
   config.vm.provider "libvirt" do |libvirt|
