@@ -1,6 +1,22 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
+require 'shellwords'
+
+def interface_up?(name)
+  operstate_path = "/sys/class/net/#{name}/operstate"
+  File.exist?(operstate_path) && File.read(operstate_path).strip == 'up'
+end
+
+def linux_bridge?(name)
+  File.directory?("/sys/class/net/#{name}/bridge")
+end
+
+def default_route_interface
+  route = `ip route get 1.1.1.1 2>/dev/null`.strip
+  route[/\bdev\s+(\S+)/, 1].to_s
+end
+
 Vagrant.configure("2") do |config|
   config.vm.box = "ubuntu-dev"
   # Set VM name to the folder name where `vagrant up` is run
@@ -11,28 +27,82 @@ Vagrant.configure("2") do |config|
   config.ssh.private_key_path = [ENV.fetch('VAGRANT_CUSTOM_KEY_PATH')] 
   config.ssh.insert_key = false
 
-  # Auto-detect a suitable Linux bridge for public networking.
-  # Prefer br0. If absent, pick any Linux bridge that is UP and not managed
-  # exclusively by libvirt/docker (virbr*, docker*).
-  bridge_interface = begin
+  # Prefer an explicit override, then br0, then any other active host bridge.
+  # If no bridge exists, fall back to the active uplink interface and let
+  # libvirt attach the guest in direct bridge mode instead of dropping back to
+  # a private-only NIC.
+  public_network_options = begin
     override = ENV['VAGRANT_BRIDGE'].to_s.strip
-    if !override.empty? && File.directory?("/sys/class/net/#{override}/bridge")
-      override
+    chosen_interface = nil
+
+    if !override.empty? && File.directory?("/sys/class/net/#{override}") && interface_up?(override)
+      chosen_interface = override
     else
-      candidates = Dir.glob('/sys/class/net/*/bridge').map { |p| File.basename(File.dirname(p)) }
-      up_bridges = candidates.select do |b|
-        File.read("/sys/class/net/#{b}/operstate").strip == 'up'
+      candidate_bridges = Dir.glob('/sys/class/net/*/bridge').map { |path| File.basename(File.dirname(path)) }
+      active_bridges = candidate_bridges.select do |name|
+        interface_up?(name)
+      end.reject do |name|
+        name =~ /^(virbr|docker)/
       end
-      up_bridges.find { |b| b == 'br0' } ||
-        up_bridges.find { |b| b !~ /^(virbr|docker)/ }
+
+      chosen_interface = active_bridges.find { |name| name == 'br0' } ||
+        active_bridges.first
+
+      if chosen_interface.nil?
+        uplink = default_route_interface
+        if !uplink.empty? && interface_up?(uplink) && uplink !~ /^(virbr|docker|vnet|tap)/
+          chosen_interface = uplink
+        end
+      end
+    end
+
+    if chosen_interface
+      if linux_bridge?(chosen_interface)
+        {
+          type: 'public_network',
+          options: {
+            libvirt__dev: chosen_interface,
+            libvirt__mode: 'bridge',
+            libvirt__type: 'bridge'
+          }
+        }
+      else
+        {
+          type: 'public_network',
+          options: {
+            dev: chosen_interface,
+            libvirt__dev: chosen_interface,
+            libvirt__mode: 'bridge',
+            libvirt__type: 'direct'
+          }
+        }
+      end
     end
   end
 
-  if bridge_interface
-    config.vm.network "public_network",
-      libvirt__dev: bridge_interface,
-      libvirt__mode: "bridge",
-      libvirt__type: "bridge"
+    ensure_vagrant_libvirt_network = <<~SHELL
+      if command -v virsh >/dev/null 2>&1 && virsh -c qemu:///system net-info vagrant-libvirt >/dev/null 2>&1; then
+        virsh -c qemu:///system net-autostart vagrant-libvirt >/dev/null 2>&1 || true
+        virsh -c qemu:///system net-start vagrant-libvirt >/dev/null 2>&1 || true
+      fi
+    SHELL
+
+    config.trigger.before :up do |trigger|
+      trigger.info = "Ensuring libvirt network vagrant-libvirt is active before boot"
+      trigger.run = {
+        inline: "/bin/bash -lc #{Shellwords.escape(ensure_vagrant_libvirt_network)}"
+      }
+    end
+
+    config.trigger.after :up do |trigger|
+      trigger.info = "Marking libvirt network vagrant-libvirt to autostart"
+      trigger.run = {
+        inline: "/bin/bash -lc #{Shellwords.escape(ensure_vagrant_libvirt_network)}"
+      }
+    end
+
+  if public_network_options
+    config.vm.network public_network_options[:type], **public_network_options[:options]
   else
     config.vm.network "private_network", type: "dhcp"
   end

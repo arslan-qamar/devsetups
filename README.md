@@ -42,6 +42,18 @@ Examples:
 
 The command patches the libvirt domain XML to use the separate SPICE socket, `egl-headless`, and virtio video configuration, then restarts or starts the VM so the change takes effect.
 
+## Libvirt Network After Host Reboot
+If a VM created with `vagrant-libvirt` fails to start after a host reboot with `network 'vagrant-libvirt' is not active`, enable and start that network once on the host:
+
+```bash
+virsh -c qemu:///system net-autostart vagrant-libvirt
+virsh -c qemu:///system net-start vagrant-libvirt
+```
+
+The shared Vagrant base file now also re-starts that network before `vagrant up` and marks it for autostart after the network exists, so future reboots do not require the manual step.
+
+For bridged guest networking, the shared Vagrant base now prefers an active host bridge such as `br0`. If no host bridge exists, it falls back to the host's active uplink interface and attaches the guest in libvirt direct bridge mode instead of silently creating a private-only NIC. You can override the selected interface with `VAGRANT_BRIDGE=<interface>` before running `vagrant up`.
+
 ## Repository Structure
 - **bootstrap.sh**: Entry point script for setting up the environment.
 - **roles/**: Contains Ansible roles for various tools and configurations.
