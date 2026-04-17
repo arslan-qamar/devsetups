@@ -1,4 +1,9 @@
 ---
+- name: Resolve login user for Docker access
+  set_fact:
+    docker_login_user: "{{ ansible_env.SUDO_USER | default(ansible_user_id, true) | default(ansible_env.USER, true) }}"
+  when: state == "present"
+
 - name: Update apt package index
   apt:
     update_cache: yes
@@ -45,12 +50,34 @@
     purge: "{{ 'yes' if state == 'absent' else 'no' }}"
   become: yes
 
-- name: Add current user to the docker group  
+- name: Ensure docker group exists
+  group:
+    name: docker
+    state: present
+  become: yes
+  when: state == "present"
+
+- name: Add login user to the docker group
   user:
-    name: "{{ ansible_user_id }}"
+    name: "{{ docker_login_user }}"
     groups: docker
     append: yes
   become: yes
+  when: state == "present"
+
+- name: Ensure Docker service is enabled and running
+  systemd:
+    name: docker
+    enabled: yes
+    state: started
+  become: yes
+  when: state == "present"
+
+- name: Verify Docker is usable by login user without sudo
+  command: sg docker -c "docker ps"
+  become: yes
+  become_user: "{{ docker_login_user }}"
+  changed_when: false
   when: state == "present"
 
 - name: Gather service facts

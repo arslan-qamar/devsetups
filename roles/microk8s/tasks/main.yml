@@ -12,13 +12,6 @@
   become: true
   when: state == 'present'
 
-- name: Remove microk8s
-  community.general.snap:
-    name: microk8s
-    state: absent
-  become: true
-  when: state == 'absent'
-
 - name: Ensure user is in microk8s group
   user:
     name: "{{ ansible_user_id }}"
@@ -58,6 +51,13 @@
   become: true
   when: state == 'absent'
   changed_when: false
+
+- name: Remove microk8s
+  community.general.snap:
+    name: microk8s
+    state: absent
+  become: true
+  when: state == 'absent'
 
 - name: Ensure ~/.kube directory exists
   file:
