@@ -29,6 +29,9 @@ Vagrant.configure("2") do |config|
   config.vm.provision "shell", name: "02_setup_ssh_key", privileged: false,
     path: "#{ENV['DEV_VMS_BASE_PATH']}/provision_02_setup_ssh_key.sh"
 
+  # 02.5 Restart after setting up SSH key
+  config.vm.provision "reload", name: "02_restart_after_setup_ssh_key"
+
   # 03. Clone git repo
   config.vm.provision "shell", name: "03_clone_git_repo", privileged: false,
     env: {
@@ -58,6 +61,9 @@ Vagrant.configure("2") do |config|
       "INSTALL_TOOLS_TAGS" => "microk8s,vscode,dotnet,rider",
     },
     path: "#{ENV['DEV_VMS_BASE_PATH']}/provision_06_install_tools.sh"
+
+  # 06.5 Restart after installing tools
+  config.vm.provision "reload", name: "06_restart_after_install_tools"
 
   # 07. Setup project
   config.vm.provision "shell", name: "07_setup_project", privileged: false,
@@ -93,6 +99,9 @@ Vagrant.configure("2") do |config|
 
       echo "All IBKR validation checks passed."
     SHELL
+  
+  # Restart after installing tools to ensure everything is properly initialized
+  config.vm.provision "reload", name: "Final_restart_after_setup"
   
   # Add libvirt-specific customizations
   config.vm.provider "libvirt" do |libvirt|

@@ -47,6 +47,13 @@
     - vagrant_plugin_list.rc == 0
     - "'vagrant-libvirt' in vagrant_plugin_list.stdout"
 
+- name: Uninstall vagrant-reload plugin
+  command: vagrant plugin uninstall vagrant-reload
+  when:
+    - state == "absent"
+    - vagrant_plugin_list.rc == 0
+    - "'vagrant-reload' in vagrant_plugin_list.stdout"
+
 - name: "{{ 'Remove' if state == 'absent' else 'Setup' }} Vagrant"
   become: yes
   apt:
@@ -74,3 +81,9 @@
   when:
     - state == "present"
     - "'vagrant-libvirt' not in vagrant_plugin_list.stdout"
+
+- name: Install vagrant-reload plugin
+  command: vagrant plugin install vagrant-reload
+  when:
+    - state == "present"
+    - "'vagrant-reload' not in vagrant_plugin_list.stdout"
