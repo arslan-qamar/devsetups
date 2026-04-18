@@ -55,7 +55,7 @@ Vagrant.configure("2") do |config|
   # 06. Install tools
   config.vm.provision "shell", name: "06_install_tools", privileged: false,
     env: {
-      "INSTALL_TOOLS_TAGS" => "vscode,dotnet,microk8s,rider",
+      "INSTALL_TOOLS_TAGS" => "microk8s,vscode,dotnet,rider",
     },
     path: "#{ENV['DEV_VMS_BASE_PATH']}/provision_06_install_tools.sh"
 

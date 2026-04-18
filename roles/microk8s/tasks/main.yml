@@ -4,12 +4,43 @@
     state: present
   become: true
 
-- name: Install microk8s
-  community.general.snap:
-    name: microk8s
-    state: "{{ state }}"
-    classic: true
+- name: Ensure snapd is enabled and running
+  systemd:
+    name: snapd
+    enabled: true
+    state: started
   become: true
+  when: state == 'present'
+
+- name: Wait for snapd seed to complete
+  command: snap wait system seed.loaded
+  become: true
+  changed_when: false
+  when: state == 'present'
+
+- name: Check whether microk8s is installed
+  command: snap list microk8s
+  register: microk8s_snap
+  become: true
+  changed_when: false
+  failed_when: false
+  when: state == 'present'
+
+- name: Install microk8s
+  command: >
+    snap install microk8s --classic
+    {% if microk8s_snap_channel is defined and microk8s_snap_channel | length > 0 %}--channel={{ microk8s_snap_channel }}{% endif %}
+  register: microk8s_install
+  become: true
+  changed_when: microk8s_install.rc == 0
+  when:
+    - state == 'present'
+    - microk8s_snap.rc != 0
+
+- name: Wait for microk8s to become ready
+  command: microk8s status --wait-ready
+  become: true
+  changed_when: false
   when: state == 'present'
 
 - name: Ensure user is in microk8s group
@@ -20,14 +51,29 @@
   become: true
   when: state == 'present'
 
-- name: Remove user from microk8s group
-  user:
-    name: "{{ ansible_user_id }}"
-    groups: ""
-    append: no
-    remove: yes
+- name: Check whether microk8s is installed for removal
+  command: snap list microk8s
+  register: microk8s_snap_remove
   become: true
+  changed_when: false
+  failed_when: false
   when: state == 'absent'
+
+- name: Check current microk8s group membership
+  command: getent group microk8s
+  register: microk8s_group
+  changed_when: false
+  failed_when: false
+  when: state == 'absent'
+
+- name: Remove user from microk8s group
+  command: gpasswd -d {{ ansible_user_id }} microk8s
+  become: true
+  when:
+    - state == 'absent'
+    - microk8s_group.rc == 0
+    - microk8s_group.stdout.split(':') | length > 3
+    - ansible_user_id in microk8s_group.stdout.split(':')[3].split(',')
 
 - name: Set list of microk8s services
   set_fact:
@@ -49,15 +95,19 @@
   command: microk8s disable {{ item }}
   loop: "{{ microk8s_services }}"
   become: true
-  when: state == 'absent'
+  when:
+    - state == 'absent'
+    - microk8s_snap_remove.rc == 0
   changed_when: false
 
 - name: Remove microk8s
-  community.general.snap:
-    name: microk8s
-    state: absent
+  command: snap remove microk8s
+  register: microk8s_remove
   become: true
-  when: state == 'absent'
+  changed_when: microk8s_remove.rc == 0
+  when:
+    - state == 'absent'
+    - microk8s_snap_remove.rc == 0
 
 - name: Ensure ~/.kube directory exists
   file:
