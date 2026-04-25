@@ -1,0 +1,55 @@
+---
+- name: Resolve MongoDB Compass package architecture
+  ansible.builtin.set_fact:
+    mongodb_compass_package_arch: "{{ mongodb_compass_architecture_map.get(ansible_architecture, '') }}"
+  when: state == 'present'
+
+- name: Ensure MongoDB Compass architecture is supported
+  ansible.builtin.assert:
+    that:
+      - mongodb_compass_package_arch | length > 0
+    fail_msg: "Unsupported architecture for MongoDB Compass installation: {{ ansible_architecture }}"
+  when: state == 'present'
+
+- name: Resolve MongoDB Compass download URL
+  ansible.builtin.set_fact:
+    mongodb_compass_deb_url: "https://downloads.mongodb.com/compass/mongodb-compass_{{ mongodb_compass_version }}_{{ mongodb_compass_package_arch }}.deb"
+  when: state == 'present'
+
+- name: Download MongoDB Compass package
+  become: true
+  ansible.builtin.get_url:
+    url: "{{ mongodb_compass_deb_url }}"
+    dest: "{{ mongodb_compass_deb_path }}"
+    mode: '0644'
+  when: state == 'present'
+
+- name: Install MongoDB Compass
+  become: true
+  ansible.builtin.apt:
+    deb: "{{ mongodb_compass_deb_path }}"
+    state: present
+    update_cache: true
+  when: state == 'present'
+
+- name: Remove MongoDB Compass package file after install
+  become: true
+  ansible.builtin.file:
+    path: "{{ mongodb_compass_deb_path }}"
+    state: absent
+  when: state == 'present'
+
+- name: Uninstall MongoDB Compass
+  become: true
+  ansible.builtin.apt:
+    name: mongodb-compass
+    state: absent
+    purge: true
+  when: state == 'absent'
+
+- name: Remove MongoDB Compass package file
+  become: true
+  ansible.builtin.file:
+    path: "{{ mongodb_compass_deb_path }}"
+    state: absent
+  when: state == 'absent'

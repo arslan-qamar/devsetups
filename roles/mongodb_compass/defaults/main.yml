@@ -1,0 +1,9 @@
+---
+state: "present"
+
+mongodb_compass_version: "1.49.4"
+mongodb_compass_architecture_map:
+  x86_64: "amd64"
+  amd64: "amd64"
+
+mongodb_compass_deb_path: "/tmp/mongodb-compass.deb"

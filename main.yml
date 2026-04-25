@@ -23,6 +23,9 @@
     - role: postman
       tags: postman
 
+    - role: mongodb_compass
+      tags: mongodb_compass
+
     - role: docker
       tags: docker   
 

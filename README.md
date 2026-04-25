@@ -63,6 +63,7 @@ For bridged guest networking, the shared Vagrant base now prefers an active host
   - **docker/**: Configures Docker.
   - **githubcli/**: Installs and configures GitHub CLI.
   - **vscode/**: Sets up Visual Studio Code.
+  - **mongodb_compass/**: Installs MongoDB Compass.
   - **zsh/**: Configures Zsh shell.
 - **ubuntu-autoinstall/**: Contains files for Ubuntu auto-installation and Vagrant base setup.
 
@@ -79,6 +80,5 @@ Contributions are welcome! Please fork the repository and submit a pull request 
 
 ## License
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
-
 
 
