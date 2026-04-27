@@ -10,5 +10,5 @@
 - name: "{{ 'Remove' if state == 'absent' else 'Setup' }} Dotnet"
   become: yes
   apt:
-    name: dotnet-sdk-8.0
+    name: "{{ dotnet_sdk_versions | map('regex_replace', '^', 'dotnet-sdk-') | list }}"
     state: "{{ state }}"

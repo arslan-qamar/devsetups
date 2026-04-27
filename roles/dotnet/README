@@ -3,3 +3,5 @@
 ```shell
 ansible-playbook -vvv main.yml -i "localhost" --connection="localhost" --extra-vars "state=present" -t="dotnet" -K
 ```
+
+To install more than one SDK version, override `dotnet_sdk_versions`, for example `8.0` and `10.0`.
