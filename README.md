@@ -42,6 +42,12 @@ Examples:
 
 The command patches the libvirt domain XML to use the separate SPICE socket, `egl-headless`, and virtio video configuration, then restarts or starts the VM so the change takes effect.
 
+If a host cannot initialize EGL and a patched VM fails to start with `eglInitialize failed: EGL_NOT_INITIALIZED`, restore the standard SPICE-only graphics layout with:
+
+```bash
+./toolbox/libvirt/disable_3d_graphics.sh <domain|vm-name|vm-directory>
+```
+
 ## Libvirt Network After Host Reboot
 If a VM created with `vagrant-libvirt` fails to start after a host reboot with `network 'vagrant-libvirt' is not active`, enable and start that network once on the host:
 
