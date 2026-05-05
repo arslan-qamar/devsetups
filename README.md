@@ -54,6 +54,27 @@ The shared Vagrant base file now also re-starts that network before `vagrant up`
 
 For bridged guest networking, the shared Vagrant base now prefers an active host bridge such as `br0`. If no host bridge exists, it falls back to the host's active uplink interface and attaches the guest in libvirt direct bridge mode instead of silently creating a private-only NIC. You can override the selected interface with `VAGRANT_BRIDGE=<interface>` before running `vagrant up`.
 
+## Configure Host GPU Passthrough
+To re-apply the host-side VFIO and GRUB changes needed for NVIDIA GPU passthrough after a host reinstall, run:
+
+```bash
+sudo ./toolbox/libvirt/configure_gpu_passthrough_host.sh
+```
+
+By default the script targets the current RTX 3060 Ti GPU function IDs that were inspected on this host:
+
+```bash
+10de:2486,10de:228b
+```
+
+To target a different GPU after hardware changes, override the PCI IDs:
+
+```bash
+sudo ./toolbox/libvirt/configure_gpu_passthrough_host.sh --vfio-pci-ids 10de:1b80,10de:10f0
+```
+
+The script updates `/etc/default/grub`, writes `/etc/modprobe.d/vfio.conf`, ensures VFIO modules load early, rebuilds initramfs, and runs `update-grub`. Reboot the host afterwards, then verify the GPU functions are bound to `vfio-pci` before creating or starting a passthrough VM.
+
 ## Repository Structure
 - **bootstrap.sh**: Entry point script for setting up the environment.
 - **roles/**: Contains Ansible roles for various tools and configurations.

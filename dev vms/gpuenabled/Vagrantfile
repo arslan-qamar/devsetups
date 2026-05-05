@@ -1,0 +1,85 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+# Load the base Vagrantfile
+load File.expand_path("../../ubuntu-autoinstall/vagrant-base/VagrantBaseFile", __dir__)
+
+ENV['VAGRANT_CUSTOM_KEY_PATH'] ||= '../../ubuntu-autoinstall/vagrant_custom_key'
+
+gpu_pci_devices = ENV.fetch('LIBVIRT_GPU_PCI_DEVICES', '').split(',').map(&:strip).reject(&:empty?)
+
+parsed_gpu_pci_devices = gpu_pci_devices.map do |pci_address|
+  match = pci_address.match(/\A(?:(?<domain>[0-9a-fA-F]{4}):)?(?<bus>[0-9a-fA-F]{2}):(?<slot>[0-9a-fA-F]{2})\.(?<function>[0-7])\z/)
+  raise "Invalid PCI address for LIBVIRT_GPU_PCI_DEVICES: #{pci_address}" unless match
+
+  {
+    domain: "0x#{(match[:domain] || '0000').downcase}",
+    bus: "0x#{match[:bus].downcase}",
+    slot: "0x#{match[:slot].downcase}",
+    function: "0x#{match[:function]}"
+  }
+end
+
+# Resolve the custom key path on the host and define a temporary path in the VM
+ssh_key_tmp = "/tmp/id_ed25519"
+ssh_key_pub_tmp = "/tmp/id_ed25519.pub"
+
+ssh_key_dest = "~/.ssh/id_ed25519"
+ssh_key_pub_dest = "~/.ssh/id_ed25519.pub"
+
+Vagrant.configure("2") do |config|
+  config.vm.box = "ubuntu-dev" 
+  
+  # Copy the custom SSH key from host to a temporary location in the VM
+  config.vm.provision "file", source: ssh_key_dest, destination: ssh_key_tmp  
+  config.vm.provision "file", source: ssh_key_pub_dest, destination: ssh_key_pub_tmp  
+  
+  # 01. Install bootstrap
+  config.vm.provision "shell", name: "01_install_bootstrap", privileged: false,
+    path: "../provision_01_install_bootstrap.sh"
+
+  # 02. Setup SSH key
+  config.vm.provision "shell", name: "02_setup_ssh_key", privileged: false,
+    path: "../provision_02_setup_ssh_key.sh"
+ 
+
+  # 05. Setup git GPG signing
+  config.vm.provision "shell", name: "05_setup_git_gpg_signing", privileged: false,
+    env: {
+      "GIT_NAME" => ENV["GIT_NAME"],
+      "GIT_EMAIL" => ENV["GIT_EMAIL"],
+      "DOPPLER_SERVICE_TOKEN_GIT" => ENV["DOPPLER_SERVICE_TOKEN_GIT"],
+    },
+    path: "../provision_05_setup_git_gpg_signing.sh"
+
+  # 06. Install tools
+  config.vm.provision "shell", name: "06_install_tools", privileged: false,
+    path: "../provision_06_install_tools.sh"
+   
+  # 10. Validate setup
+  config.vm.provision "shell", name: "10_validate_setup", privileged: false,
+    path: "../provision_validate_setup.sh"
+  
+  # Add libvirt-specific customizations
+  config.vm.provider "libvirt" do |libvirt|
+    libvirt.memory = 14576
+    libvirt.graphics_type = "spice"
+    libvirt.video_type = "virtio"
+
+    if parsed_gpu_pci_devices.any?
+      libvirt.cpu_mode = "host-passthrough"
+      libvirt.machine_type = "q35"
+      libvirt.kvm_hidden = true
+
+      parsed_gpu_pci_devices.each do |pci_device|
+        libvirt.pci(
+          domain: pci_device[:domain],
+          bus: pci_device[:bus],
+          slot: pci_device[:slot],
+          function: pci_device[:function]
+        )
+      end
+    end
+  end
+  
+end
