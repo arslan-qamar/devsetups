@@ -8,6 +8,18 @@ def interface_up?(name)
   File.exist?(operstate_path) && File.read(operstate_path).strip == 'up'
 end
 
+def positive_integer_env(name)
+  raw_value = ENV[name].to_s.strip
+  return if raw_value.empty?
+
+  parsed_value = Integer(raw_value, 10)
+  raise ArgumentError, "#{name} must be greater than zero" if parsed_value <= 0
+
+  parsed_value
+rescue ArgumentError
+  raise ArgumentError, "#{name} must be a positive integer"
+end
+
 def linux_bridge?(name)
   File.directory?("/sys/class/net/#{name}/bridge")
 end
@@ -21,7 +33,11 @@ Vagrant.configure("2") do |config|
   config.vm.box = "ubuntu-dev"
   # Set VM name to the folder name where `vagrant up` is run
   config.vm.define 'vm'
+  vagrant_base_dir = __dir__
   vm_name = File.basename(Dir.pwd)
+  machine_virtual_size_gb = positive_integer_env('VAGRANT_VM_DISK_SIZE_GB')
+  resize_existing_disk_script = File.join(vagrant_base_dir, 'resize_libvirt_primary_disk.sh')
+  resize_guest_root_fs_script = File.join(vagrant_base_dir, 'resize_guest_root_fs.sh')
   config.vm.hostname = "#{vm_name}-vm"
   config.ssh.username = "ubuntu"  
   config.ssh.private_key_path = [ENV.fetch('VAGRANT_CUSTOM_KEY_PATH')] 
@@ -94,6 +110,24 @@ Vagrant.configure("2") do |config|
       }
     end
 
+    if machine_virtual_size_gb
+      resize_existing_disk_command = Shellwords.join([
+        '/bin/bash',
+        resize_existing_disk_script,
+        Dir.pwd,
+        machine_virtual_size_gb.to_s
+      ])
+
+      [:up, :reload, :provision].each do |action|
+        config.trigger.before action do |trigger|
+          trigger.info = "Growing existing libvirt disk to #{machine_virtual_size_gb}G when needed"
+          trigger.run = {
+            inline: "/bin/bash -lc #{Shellwords.escape(resize_existing_disk_command)}"
+          }
+        end
+      end
+    end
+
     config.trigger.after :up do |trigger|
       trigger.info = "Marking libvirt network vagrant-libvirt to autostart"
       trigger.run = {
@@ -111,6 +145,7 @@ Vagrant.configure("2") do |config|
     libvirt.driver = "kvm"
     libvirt.cpus = 6
     libvirt.memory = 16384
+    libvirt.machine_virtual_size = machine_virtual_size_gb if machine_virtual_size_gb
     libvirt.graphics_type = "spice"
     libvirt.graphics_autoport = true
     libvirt.keymap = "en-us"
@@ -131,5 +166,10 @@ Vagrant.configure("2") do |config|
     sudo ln -sf /usr/share/zoneinfo/$(cat /etc/timezone) /etc/localtime
     sudo dpkg-reconfigure -f noninteractive tzdata
   SHELL
+
+  if machine_virtual_size_gb
+    config.vm.provision "shell", name: "expand_root_filesystem", run: "always", privileged: true,
+      path: resize_guest_root_fs_script
+  end
 
 end

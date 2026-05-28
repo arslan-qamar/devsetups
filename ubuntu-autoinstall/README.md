@@ -57,6 +57,17 @@ cd ibkr
 vagrant up
 ```
 
+To create a VM with a larger primary disk, set `VAGRANT_VM_DISK_SIZE_GB` before `vagrant up`:
+
+```bash
+export VAGRANT_VM_DISK_SIZE_GB=150
+vagrant up --provider=libvirt
+```
+
+This uses `vagrant-libvirt`'s `machine_virtual_size` setting from the shared base Vagrant configuration, so it applies to every VM that loads `ubuntu-autoinstall/vagrant-base/VagrantBaseFile`. The larger virtual disk is applied when the VM is created; existing machines typically need to be recreated to pick up a new primary disk size, and guest partition/filesystem growth is a separate concern.
+
+For existing libvirt VMs, keep the same environment variable and run either `vagrant provision` while the machine is running or `vagrant reload --provision` / `vagrant up --provision` while it is stopped. The shared Vagrant configuration now grows the libvirt disk on the host first, then runs a guest provisioner to expand the root partition/filesystem in place.
+
 ## Additional Information
 
 The base image now installs `spice-vdagent`, and the shared libvirt Vagrant configuration exposes the SPICE agent channel. After pulling these changes, rebuild the base box and recreate or repackage VMs that still use an older box build if you want automatic display resize support in SPICE clients.
