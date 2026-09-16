@@ -47,8 +47,8 @@ Vagrant.configure("2") do |config|
 
   # Prefer an explicit override, then br0, then any other active host bridge.
   # If no bridge exists, fall back to the active uplink interface and let
-  # libvirt attach the guest in direct bridge mode instead of dropping back to
-  # a private-only NIC.
+  # libvirt attach the guest in direct bridge mode. The provider's management
+  # network remains available if no public interface can be selected.
   public_network_options = begin
     override = ENV['VAGRANT_BRIDGE'].to_s.strip
     chosen_interface = nil
@@ -98,20 +98,6 @@ Vagrant.configure("2") do |config|
     end
   end
 
-    ensure_vagrant_libvirt_network = <<~SHELL
-      if command -v virsh >/dev/null 2>&1 && virsh -c qemu:///system net-info vagrant-libvirt >/dev/null 2>&1; then
-        virsh -c qemu:///system net-autostart vagrant-libvirt >/dev/null 2>&1 || true
-        virsh -c qemu:///system net-start vagrant-libvirt >/dev/null 2>&1 || true
-      fi
-    SHELL
-
-    config.trigger.before :up do |trigger|
-      trigger.info = "Ensuring libvirt network vagrant-libvirt is active before boot"
-      trigger.run = {
-        inline: "/bin/bash -lc #{Shellwords.escape(ensure_vagrant_libvirt_network)}"
-      }
-    end
-
     if machine_virtual_size_gb
       resize_existing_disk_command = Shellwords.join([
         '/bin/bash',
@@ -128,13 +114,6 @@ Vagrant.configure("2") do |config|
           }
         end
       end
-    end
-
-    config.trigger.after :up do |trigger|
-      trigger.info = "Marking libvirt network vagrant-libvirt to autostart"
-      trigger.run = {
-        inline: "/bin/bash -lc #{Shellwords.escape(ensure_vagrant_libvirt_network)}"
-      }
     end
 
     [:up, :reload].each do |action|
@@ -155,18 +134,14 @@ Vagrant.configure("2") do |config|
 
   if public_network_options
     config.vm.network public_network_options[:type], **public_network_options[:options]
-  else
-    config.vm.network "private_network", type: "dhcp"
   end
   
   config.vm.provider "libvirt" do |libvirt|
-    libvirt.driver = "kvm"
     libvirt.cpus = 6
     libvirt.memory = 16384
+    libvirt.management_network_autostart = true
     libvirt.machine_virtual_size = machine_virtual_size_gb if machine_virtual_size_gb
     libvirt.graphics_type = "spice"
-    libvirt.graphics_autoport = true
-    libvirt.keymap = "en-us"
     libvirt.video_type = "virtio"
     libvirt.video_vram = 4096
     libvirt.sound_type = "ich9"

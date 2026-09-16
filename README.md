@@ -65,9 +65,9 @@ virsh -c qemu:///system net-autostart vagrant-libvirt
 virsh -c qemu:///system net-start vagrant-libvirt
 ```
 
-The shared Vagrant base file now also re-starts that network before `vagrant up` and marks it for autostart after the network exists, so future reboots do not require the manual step.
+The shared Vagrant base enables `vagrant-libvirt`'s management-network autostart setting. The provider activates the network during `vagrant up` and marks it to start on future host boots.
 
-For bridged guest networking, the shared Vagrant base now prefers an active host bridge such as `br0`. If no host bridge exists, it falls back to the host's active uplink interface and attaches the guest in libvirt direct bridge mode instead of silently creating a private-only NIC. You can override the selected interface with `VAGRANT_BRIDGE=<interface>` before running `vagrant up`.
+For bridged guest networking, the shared Vagrant base prefers an active host bridge such as `br0`. If no host bridge exists, it uses the host's active uplink interface in libvirt direct bridge mode. If neither is available, the VM retains its Vagrant management NIC without adding a second private NIC. You can override the selected interface with `VAGRANT_BRIDGE=<interface>` before running `vagrant up`.
 
 ## Configure Host GPU Passthrough
 To re-apply the host-side VFIO and GRUB changes needed for NVIDIA GPU passthrough after a host reinstall, run:
