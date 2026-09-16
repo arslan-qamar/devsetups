@@ -56,15 +56,19 @@ require 'rexml/xpath'
 xml_file = ARGV.fetch(0)
 doc = REXML::Document.new(File.read(xml_file))
 devices = doc.elements['/domain/devices']
+socket_path = "/tmp/#{doc.elements['/domain/name'].text}.sock"
 
 graphics_nodes = devices.get_elements('graphics')
 video_nodes = devices.get_elements('video')
 
 already_restored = graphics_nodes.size == 1 &&
   graphics_nodes.first.attributes['type'] == 'spice' &&
-  graphics_nodes.first.attributes['autoport'] == 'yes' &&
   graphics_nodes.first.attributes['keymap'] == 'en-us' &&
+  graphics_nodes.first.attributes['port'].nil? &&
+  graphics_nodes.first.attributes['autoport'].nil? &&
+  REXML::XPath.first(doc, "/domain/devices/graphics[@type='spice']/listen")&.attributes&.[]('socket') == socket_path &&
   video_nodes.size == 1 &&
+  REXML::XPath.first(doc, '/domain/devices/video/model')&.attributes&.[]('heads') == '2' &&
   !REXML::XPath.first(doc, "/domain/devices/graphics[@type='egl-headless']") &&
   !REXML::XPath.first(doc, "/domain/devices/video/model/acceleration[@accel3d='yes']")
 
@@ -83,14 +87,14 @@ end
 
 devices.add_element('graphics', {
   'type' => 'spice',
-  'autoport' => 'yes',
   'keymap' => 'en-us'
-})
+}).add_element('listen', { 'type' => 'socket', 'socket' => socket_path })
 
 video = devices.add_element('video')
 video.add_element('model', {
   'type' => 'virtio',
-  'vram' => '4096'
+  'vram' => '4096',
+  'heads' => '2'
 })
 
 formatter = REXML::Formatters::Pretty.new(2)

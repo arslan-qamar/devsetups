@@ -26,6 +26,15 @@ ansible-playbook -i '<vm-name.local | 192.168.0.*>,' -u ubuntu --ssh-common-args
 Replace `<vm-name.local | 192.168.0.*>` with your VM's Name or VM's IP address. This command uses the specified SSH config and runs the playbook with the `microk8s` tag. The `-K` flag will prompt for the sudo password if needed.
 
 ## Enable 3D Graphics After Provisioning
+
+VMs created through the shared Vagrant base use two virtio display heads and a SPICE Unix socket at `/tmp/<VM_NAME>.sock`. For example, after `vagrant up` in `dev vms/ibkr`, connect with:
+
+```bash
+remote-viewer 'spice+unix:///tmp/ibkr_vm.sock'
+```
+
+The socket exists only while the VM is running. The shared Vagrant triggers apply this configuration after `vagrant up` and `vagrant reload`, register the URI in the host Remote Viewer app's recent connections, and restart a running guest once if the graphics definition needs updating. `vagrant destroy` removes the Remote Viewer entry after the libvirt domain is gone. To update an existing domain directly, run `bash ubuntu-autoinstall/vagrant-base/configure_spice_socket.sh <domain>`.
+
 To enable the custom libvirt 3D graphics layout on a VM after it has already been created and provisioned, run:
 
 ```bash
@@ -107,5 +116,3 @@ Contributions are welcome! Please fork the repository and submit a pull request 
 
 ## License
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
-
-

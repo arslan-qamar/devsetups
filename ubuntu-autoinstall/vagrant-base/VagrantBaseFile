@@ -38,6 +38,8 @@ Vagrant.configure("2") do |config|
   machine_virtual_size_gb = positive_integer_env('VAGRANT_VM_DISK_SIZE_GB')
   resize_existing_disk_script = File.join(vagrant_base_dir, 'resize_libvirt_primary_disk.sh')
   resize_guest_root_fs_script = File.join(vagrant_base_dir, 'resize_guest_root_fs.sh')
+  configure_spice_socket_script = File.join(vagrant_base_dir, 'configure_spice_socket.sh')
+  remote_viewer_recent_script = File.join(vagrant_base_dir, 'register_remote_viewer.py')
   config.vm.hostname = "#{vm_name}-vm"
   config.ssh.username = "ubuntu"  
   config.ssh.private_key_path = [ENV.fetch('VAGRANT_CUSTOM_KEY_PATH')] 
@@ -132,6 +134,22 @@ Vagrant.configure("2") do |config|
       trigger.info = "Marking libvirt network vagrant-libvirt to autostart"
       trigger.run = {
         inline: "/bin/bash -lc #{Shellwords.escape(ensure_vagrant_libvirt_network)}"
+      }
+    end
+
+    [:up, :reload].each do |action|
+      config.trigger.after action do |trigger|
+        trigger.info = "Configuring SPICE socket and two display heads for #{vm_name}_vm"
+        trigger.run = {
+          inline: Shellwords.join(['/bin/bash', configure_spice_socket_script, "#{vm_name}_vm"])
+        }
+      end
+    end
+
+    config.trigger.after :destroy do |trigger|
+      trigger.info = "Removing Remote Viewer connection for #{vm_name}_vm"
+      trigger.run = {
+        inline: Shellwords.join(['/usr/bin/python3', remote_viewer_recent_script, '--remove', "#{vm_name}_vm"])
       }
     end
 

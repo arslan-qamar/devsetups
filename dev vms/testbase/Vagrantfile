@@ -1,0 +1,31 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+# Load the base Vagrantfile
+load File.expand_path("../../ubuntu-autoinstall/vagrant-base/VagrantBaseFile", __dir__)
+
+ENV['VAGRANT_CUSTOM_KEY_PATH'] ||= '../../ubuntu-autoinstall/vagrant_custom_key'
+
+# Resolve the custom key path on the host and define a temporary path in the VM
+ssh_key_tmp = "/tmp/id_ed25519"
+ssh_key_pub_tmp = "/tmp/id_ed25519.pub"
+
+ssh_key_dest = "~/.ssh/id_ed25519"
+ssh_key_pub_dest = "~/.ssh/id_ed25519.pub"
+
+Vagrant.configure("2") do |config|
+  config.vm.box = "ubuntu-dev" 
+  
+  # Copy the custom SSH key from host to a temporary location in the VM
+  config.vm.provision "file", source: ssh_key_dest, destination: ssh_key_tmp  
+  config.vm.provision "file", source: ssh_key_pub_dest, destination: ssh_key_pub_tmp    
+
+  
+  # Add libvirt-specific customizations
+  config.vm.provider "libvirt" do |libvirt|
+    libvirt.memory = 14576
+    libvirt.graphics_type = "spice"
+    libvirt.video_type = "virtio"
+  end
+  
+end
