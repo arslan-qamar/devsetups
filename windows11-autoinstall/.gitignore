@@ -1,0 +1,5 @@
+output/
+output-windows11/
+generated/
+*.log
+.vagrant/
