@@ -1,14 +1,34 @@
 $ErrorActionPreference = 'Stop'
 $log = 'C:\Windows\Temp\prepare-vagrant-box.log'
 $sysprepAnswerFile = 'C:\Windows\Temp\SysprepUnattend.xml'
+$virtioGuestTools = 'C:\Windows\Temp\virtio-win-guest-tools.exe'
 
 if (-not (Test-Path -LiteralPath $sysprepAnswerFile)) {
     throw "Missing Sysprep answer file: $sysprepAnswerFile"
 }
 
+if (-not (Test-Path -LiteralPath $virtioGuestTools)) {
+    throw "Missing virtio-win Guest Tools installer: $virtioGuestTools"
+}
+
 Start-Transcript -Path $log -Force | Out-Null
 
 try {
+    # Install the Windows 11 virtio GPU driver and SPICE agent as Local System
+    # so driver installation remains unattended.
+    Write-Host 'Installing virtio-win Guest Tools...'
+    $virtioInstall = Start-Process `
+        -FilePath $virtioGuestTools `
+        -ArgumentList '/install', '/quiet', '/norestart' `
+        -Wait `
+        -PassThru
+
+    if ($virtioInstall.ExitCode -notin 0, 3010) {
+        throw "virtio-win Guest Tools installer failed with exit code $($virtioInstall.ExitCode)."
+    }
+
+    Write-Host "virtio-win Guest Tools installed with exit code $($virtioInstall.ExitCode)."
+
     # Windows 11 24H2 can automatically start device encryption on TPM and
     # Secure Boot capable systems. A generalized Vagrant box must not retain a
     # volume encrypted against the build VM's TPM state.

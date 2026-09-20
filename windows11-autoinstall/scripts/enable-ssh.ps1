@@ -52,6 +52,7 @@ Start-Service sshd
 $prepareScript = 'C:\Windows\Temp\prepare-vagrant-box.ps1'
 $completeOobeScript = 'C:\Windows\Temp\complete-oobe.ps1'
 $sysprepAnswerFile = 'C:\Windows\Temp\SysprepUnattend.xml'
+$virtioGuestTools = 'C:\Windows\Temp\virtio-win-guest-tools.exe'
 
 Copy-Item `
     -LiteralPath (Join-Path $PSScriptRoot 'prepare-vagrant-box.ps1') `
@@ -66,6 +67,11 @@ Copy-Item `
 Copy-Item `
     -LiteralPath (Join-Path $PSScriptRoot 'SysprepUnattend.xml') `
     -Destination $sysprepAnswerFile `
+    -Force
+
+Copy-Item `
+    -LiteralPath (Join-Path $PSScriptRoot 'virtio-win-guest-tools.exe') `
+    -Destination $virtioGuestTools `
     -Force
 
 $sysprepAction = New-ScheduledTaskAction `

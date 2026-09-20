@@ -61,6 +61,10 @@ Vagrant.configure("2") do |config|
     libvirt.disk_bus = "sata"
     libvirt.nic_model_type = "e1000"
     libvirt.graphics_type = "spice"
-    libvirt.video_type = "vga"
+    libvirt.video_type = "virtio"
+    libvirt.video_vram = 65536
+    libvirt.channel type: "spicevmc",
+                    target_type: "virtio",
+                    target_name: "com.redhat.spice.0"
   end
 end

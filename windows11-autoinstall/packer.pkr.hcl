@@ -88,6 +88,7 @@ source "qemu" "windows11" {
     "scripts/prepare-vagrant-box.ps1",
     "scripts/complete-oobe.ps1",
     "generated/SysprepUnattend.xml",
+    "generated/virtio-win-guest-tools.exe",
   ]
   cd_label = "PACKERCFG"
 

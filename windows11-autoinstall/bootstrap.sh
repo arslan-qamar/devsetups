@@ -14,6 +14,8 @@ memory="${WIN11_MEMORY_MB:-8192}"
 disk_size="${WIN11_DISK_MB:-81920}"
 packer_on_error="${WIN11_PACKER_ON_ERROR:-cleanup}"
 guest_password="${WIN11_PASSWORD:-vagrant}"
+virtio_guest_tools_url="${WIN11_VIRTIO_GUEST_TOOLS_URL:-https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/archive-virtio/virtio-win-0.1.302-1/virtio-win-guest-tools.exe}"
+virtio_guest_tools_checksum="${WIN11_VIRTIO_GUEST_TOOLS_SHA256:-d8ae9ea1e943384ac195e012cd36f82c3161620e5fc9529be4e42e6f420e222d}"
 
 run_as_root() {
   if (( EUID == 0 )); then
@@ -77,6 +79,45 @@ vagrant plugin list | grep -q '^vagrant-libvirt ' || { echo "Install the vagrant
 iso_path="$(realpath "$iso_path")"
 mkdir -p generated output
 chmod 700 generated
+
+python3 - "$virtio_guest_tools_url" "$virtio_guest_tools_checksum" "generated/virtio-win-guest-tools.exe" <<'PY'
+from hashlib import sha256
+from pathlib import Path
+import os
+import sys
+from urllib.request import Request, urlopen
+
+url, expected_checksum, destination_string = sys.argv[1:]
+destination = Path(destination_string)
+
+def checksum(path):
+    digest = sha256()
+    with path.open('rb') as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b''):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+if destination.is_file() and checksum(destination) == expected_checksum:
+    print(f'Reusing verified virtio-win Guest Tools: {destination}')
+    raise SystemExit(0)
+
+temporary = destination.with_suffix(destination.suffix + '.tmp')
+print(f'Downloading virtio-win Guest Tools from {url}...')
+try:
+    request = Request(url, headers={'User-Agent': 'windows11-autoinstall/1.0'})
+    with urlopen(request, timeout=60) as response, temporary.open('wb') as output:
+        while chunk := response.read(1024 * 1024):
+            output.write(chunk)
+
+    actual_checksum = checksum(temporary)
+    if actual_checksum != expected_checksum:
+        raise RuntimeError(
+            f'virtio-win Guest Tools checksum mismatch: expected {expected_checksum}, got {actual_checksum}'
+        )
+    os.replace(temporary, destination)
+finally:
+    temporary.unlink(missing_ok=True)
+PY
 
 source_checksum="$(sha256sum "$iso_path" | cut -d' ' -f1)"
 boot_iso="generated/install-noprompt.iso"
