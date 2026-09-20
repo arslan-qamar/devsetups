@@ -13,7 +13,7 @@ cd windows11-autoinstall
 ./bootstrap.sh
 ```
 
-The script verifies the ISO checksum, generates a random local Vagrant account password, runs Packer, writes timestamped artifacts such as `output/windows11-home-dev-20260919-143000.box` and `output/windows11-home-dev-20260919-143000.json`, and registers the stable `windows11-home-dev` box name. Timestamped filenames preserve earlier build artifacts. Generated answer files and box output are ignored by Git. The account password is stored inside the local box's Vagrantfile so Vagrant can connect; treat the box as a credential-bearing artifact and do not publish it.
+The script verifies the ISO checksum, runs Packer, writes timestamped artifacts such as `output/windows11-home-dev-20260919-143000.box` and `output/windows11-home-dev-20260919-143000.json`, and registers the stable `windows11-home-dev` box name. Timestamped filenames preserve earlier build artifacts. Generated answer files and box output are ignored by Git. The local administrator credentials default to `vagrant` / `vagrant`, matching conventional development boxes. Set `WIN11_PASSWORD` before running the build to use another password.
 
 Windows 11 24H2 can automatically encrypt the OS volume when TPM and Secure Boot are available. The installation and Sysprep answer files disable automatic device encryption, and the final preparation task verifies that `C:` is fully decrypted before Sysprep. This prevents cloned VMs from depending on the build VM's discarded TPM state. The preparation task also removes the ISO's user-installed Copilot package before Sysprep, avoiding the `0x80073cf2` package mismatch observed on the first test build.
 
@@ -33,4 +33,4 @@ vagrant winssh -c 'Get-ComputerInfo | Select-Object WindowsProductName'
 
 The Vagrant box carries Windows-specific WinSSH, UEFI, TPM, and libvirt settings. It intentionally does not load the Ubuntu `VagrantBaseFile` or Linux guest provisioners. The default VM hardware uses SATA and an emulated Intel network adapter so Setup does not depend on separate VirtIO drivers. The guest uses password-authenticated OpenSSH over the local libvirt network. Windows activation remains the responsibility of each VM user.
 
-Optional build settings: `WIN11_BOX_NAME`, `WIN11_BOX_VERSION`, `WIN11_CPUS`, `WIN11_MEMORY_MB`, `WIN11_DISK_MB`, and `WIN11_PACKER_ON_ERROR` (`cleanup` or `abort`).
+Optional build settings: `WIN11_BOX_NAME`, `WIN11_BOX_VERSION`, `WIN11_PASSWORD`, `WIN11_CPUS`, `WIN11_MEMORY_MB`, `WIN11_DISK_MB`, and `WIN11_PACKER_ON_ERROR` (`cleanup` or `abort`).

@@ -13,6 +13,7 @@ cpus="${WIN11_CPUS:-4}"
 memory="${WIN11_MEMORY_MB:-8192}"
 disk_size="${WIN11_DISK_MB:-81920}"
 packer_on_error="${WIN11_PACKER_ON_ERROR:-cleanup}"
+guest_password="${WIN11_PASSWORD:-vagrant}"
 
 run_as_root() {
   if (( EUID == 0 )); then
@@ -95,13 +96,14 @@ fi
 boot_iso="$(realpath "$boot_iso")"
 iso_checksum="sha256:$(sha256sum "$boot_iso" | cut -d' ' -f1)"
 
-# The password is local to this box build. Both generated files are ignored by Git.
-python3 - <<'PY'
+# Generated files are ignored by Git. The default account is vagrant/vagrant;
+# WIN11_PASSWORD can override it for a private build.
+python3 - "$guest_password" <<'PY'
 from pathlib import Path
-from secrets import token_urlsafe
 import json
+import sys
 
-password = token_urlsafe(24)
+password = sys.argv[1]
 for source, target in (
     ('Autounattend.xml.tpl', 'generated/Autounattend.xml'),
     ('SysprepUnattend.xml.tpl', 'generated/SysprepUnattend.xml'),
