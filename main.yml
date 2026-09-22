@@ -44,6 +44,9 @@
     - role: vagrant
       tags: vagrant  
 
+    - role: vm_shared_folder
+      tags: vm_shared_folder
+
     - role: packer
       tags: packer
  

@@ -1,0 +1,16 @@
+---
+vm_shared_folder_owner: "{{ ansible_user_id }}"
+vm_shared_folder_path: "{{ ansible_user_dir }}/VMShared"
+vm_shared_folder_name: vagrant-shared
+vm_shared_folder_samba_user: "{{ vm_shared_folder_owner }}"
+# Permit authenticated clients on loopback and RFC1918 networks without
+# assuming vagrant-libvirt's default management subnet.
+vm_shared_folder_samba_hosts_allow:
+  - 127.0.0.1
+  - 10.0.0.0/8
+  - 172.16.0.0/12
+  - 192.168.0.0/16
+vm_shared_folder_firewall_sources:
+  - 10.0.0.0/8
+  - 172.16.0.0/12
+  - 192.168.0.0/16

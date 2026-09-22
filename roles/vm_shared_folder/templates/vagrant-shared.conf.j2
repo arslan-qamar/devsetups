@@ -1,0 +1,16 @@
+[{{ vm_shared_folder_name }}]
+   comment = Shared data for the host and Vagrant VMs
+   path = {{ vm_shared_folder_path }}
+   browseable = yes
+   read only = no
+   guest ok = no
+   valid users = {{ vm_shared_folder_samba_user }}
+   force user = {{ vm_shared_folder_owner }}
+   create mask = 0660
+   force create mode = 0660
+   directory mask = 2770
+   force directory mode = 2770
+{% if vm_shared_folder_samba_hosts_allow | length > 0 %}
+   hosts allow = {{ vm_shared_folder_samba_hosts_allow | join(' ') }}
+   hosts deny = ALL
+{% endif %}

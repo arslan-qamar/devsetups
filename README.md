@@ -67,6 +67,29 @@ virsh -c qemu:///system net-start vagrant-libvirt
 
 The shared Vagrant base enables `vagrant-libvirt`'s management-network autostart setting. The provider activates the network during `vagrant up` and marks it to start on future host boots.
 
+## Shared host and VM data
+
+All Ubuntu and Windows VM profiles share `~/VMShared` with the host through one
+authenticated Samba share. Ubuntu mounts it at `/shared`; Windows maps it to
+`S:`. Configure the host and register the host username once with:
+
+```bash
+ansible-playbook main.yml -i 'localhost,' --connection=local \
+  --extra-vars 'state=present' --tags vm_shared_folder -K
+sudo smbpasswd -a "$USER"
+```
+
+Before running Vagrant, export `VAGRANT_SHARED_SMB_USER="$USER"` and
+`VAGRANT_SHARED_SMB_PASSWORD` with the password chosen above. The sensitive
+value is passed only to the mount provisioner and is not committed. Guests
+discover the host address from their active Vagrant SSH connection, so custom
+libvirt management subnets work without configuration. Samba accepts only
+authenticated clients from loopback and RFC1918 private networks by default.
+Override the Ansible variable `vm_shared_folder_path` to change the host path,
+or set `VAGRANT_SHARED_DISABLED=1` for a VM that should not receive the share.
+If the password is absent, Vagrant skips only the optional shared-folder
+provisioner and continues normally.
+
 For bridged guest networking, the shared Vagrant base prefers an active host bridge such as `br0`. If no host bridge exists, it uses the host's active uplink interface in libvirt direct bridge mode. If neither is available, the VM retains its Vagrant management NIC without adding a second private NIC. You can override the selected interface with `VAGRANT_BRIDGE=<interface>` before running `vagrant up`.
 
 ## Configure Host GPU Passthrough

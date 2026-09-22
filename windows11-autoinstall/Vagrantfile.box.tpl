@@ -1,4 +1,20 @@
 require "fileutils"
+require "etc"
+
+shared_folder_disabled = %w[1 true yes on].include?(
+  ENV.fetch("VAGRANT_SHARED_DISABLED", "").downcase
+)
+shared_folder_password = ENV.fetch("VAGRANT_SHARED_SMB_PASSWORD", "")
+shared_folder_user = ENV.fetch(
+  "VAGRANT_SHARED_SMB_USER",
+  Etc.getlogin || ENV.fetch("USER")
+)
+
+if !shared_folder_disabled && shared_folder_password.empty? &&
+   ENV["DEVSETUPS_SHARED_FOLDER_NOTICE"] != "1"
+  warn "[devsetups] VAGRANT_SHARED_SMB_PASSWORD is not set; skipping the optional VM shared folder."
+  ENV["DEVSETUPS_SHARED_FOLDER_NOTICE"] = "1"
+end
 
 nvram_path = ENV.fetch(
   "WIN11_NVRAM_PATH",
@@ -47,6 +63,70 @@ Vagrant.configure("2") do |config|
   config.winssh.insert_key = false
   config.winssh.connect_timeout = 600
   config.winssh.shell = "powershell"
+  config.vm.synced_folder ".", "/vagrant", disabled: true
+
+  unless shared_folder_disabled || shared_folder_password.empty? ||
+         ENV["DEVSETUPS_WINDOWS_SHARED_FOLDER_CONFIGURED"] == "1"
+    config.vm.provision "shell",
+                        name: "mount_vm_shared_folder",
+                        run: "always",
+                        privileged: false,
+                        sensitive: true,
+                        env: {
+                          "VM_SHARED_DRIVE" => ENV.fetch("VAGRANT_SHARED_WINDOWS_DRIVE", "S:"),
+                          "VM_SHARED_HOST" => ENV.fetch("VAGRANT_SHARED_SMB_HOST", ""),
+                          "VM_SHARED_NAME" => ENV.fetch("VAGRANT_SHARED_SMB_NAME", "vagrant-shared"),
+                          "VM_SHARED_USER" => shared_folder_user,
+                          "VM_SHARED_PASSWORD" => shared_folder_password
+                        },
+                        inline: <<~'POWERSHELL'
+                          $ErrorActionPreference = 'Stop'
+                          if ([string]::IsNullOrWhiteSpace($env:VM_SHARED_HOST)) {
+                              $env:VM_SHARED_HOST = ($env:SSH_CONNECTION -split '\s+')[0]
+                          }
+                          $remotePath = "\\$($env:VM_SHARED_HOST)\$($env:VM_SHARED_NAME)"
+                          $client = [System.Net.Sockets.TcpClient]::new()
+                          try {
+                              $connection = $client.BeginConnect($env:VM_SHARED_HOST, 445, $null, $null)
+                              if (-not $connection.AsyncWaitHandle.WaitOne(3000)) {
+                                  Write-Warning 'Optional SMB share is unreachable on TCP 445; continuing provisioning.'
+                                  exit 0
+                              }
+                              $client.EndConnect($connection)
+                          }
+                          catch {
+                              Write-Warning 'Optional SMB share is unreachable on TCP 445; continuing provisioning.'
+                              exit 0
+                          }
+                          finally {
+                              $client.Dispose()
+                          }
+                          $existing = Get-SmbMapping -LocalPath $env:VM_SHARED_DRIVE -ErrorAction SilentlyContinue
+
+                          if ($null -ne $existing -and
+                              $existing.RemotePath -eq $remotePath -and
+                              $existing.Status -eq 'OK') {
+                              Write-Host "Shared folder is already mapped at $($env:VM_SHARED_DRIVE)"
+                              exit 0
+                          }
+                          if ($null -ne $existing) {
+                              Remove-SmbMapping -LocalPath $env:VM_SHARED_DRIVE -Force -UpdateProfile
+                          }
+                          $mappingOutput = & net.exe use `
+                              $env:VM_SHARED_DRIVE `
+                              $remotePath `
+                              $env:VM_SHARED_PASSWORD `
+                              "/user:$($env:VM_SHARED_USER)" `
+                              /persistent:yes 2>&1
+
+                          if ($LASTEXITCODE -ne 0) {
+                              Write-Warning "Could not map the optional SMB share (net use exit $LASTEXITCODE); continuing provisioning."
+                              exit 0
+                          }
+                          Write-Host "Mapped the shared host folder to $($env:VM_SHARED_DRIVE)"
+                        POWERSHELL
+    ENV["DEVSETUPS_WINDOWS_SHARED_FOLDER_CONFIGURED"] = "1"
+  end
 
   config.vm.provider "libvirt" do |libvirt|
     libvirt.memory = 8192

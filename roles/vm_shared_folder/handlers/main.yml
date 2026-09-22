@@ -1,0 +1,13 @@
+---
+- name: Validate Samba configuration
+  command: testparm -s
+  changed_when: false
+  listen: Restart Samba
+
+- name: Restart Samba service
+  become: yes
+  systemd:
+    name: smbd
+    enabled: yes
+    state: restarted
+  listen: Restart Samba

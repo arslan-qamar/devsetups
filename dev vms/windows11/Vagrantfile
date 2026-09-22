@@ -2,6 +2,7 @@
 # vi: set ft=ruby :
 
 require "fileutils"
+load File.expand_path("../../vagrant-common/shared_folder.rb", __dir__)
 
 nvram_path = ENV.fetch(
   "WIN11_NVRAM_PATH",
@@ -45,6 +46,7 @@ Vagrant.configure("2") do |config|
   # and graphics settings. Disable the default share because Windows does not
   # include the rsync tooling used by vagrant-libvirt.
   config.vm.synced_folder ".", "/vagrant", disabled: true
+  DevSetupsSharedFolder.configure_windows(config)
 
   config.vm.provider "libvirt" do |libvirt|
     libvirt.default_prefix = "windows11"

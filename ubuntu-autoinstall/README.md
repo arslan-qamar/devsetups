@@ -8,6 +8,7 @@ Ensure the following tools are installed on your system:
 - [Packer](https://www.packer.io/)
 - QEMU/KVM
 - libvirt
+- Samba host support (installed by the `vm_shared_folder` role)
 - virt-manager (optional GUI)
 
 ## Setup Instructions
@@ -73,4 +74,3 @@ For existing libvirt VMs, keep the same environment variable and run either `vag
 The base image now installs `spice-vdagent`, and the shared libvirt Vagrant configuration exposes the SPICE agent channel. After pulling these changes, rebuild the base box and recreate or repackage VMs that still use an older box build if you want automatic display resize support in SPICE clients.
 
 For more details, refer to the respective README files in the application-specific folders.
-

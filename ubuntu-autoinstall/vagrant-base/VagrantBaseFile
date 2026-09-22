@@ -2,6 +2,7 @@
 # vi: set ft=ruby :
 
 require 'shellwords'
+load File.expand_path("../../vagrant-common/shared_folder.rb", __dir__)
 
 def interface_up?(name)
   operstate_path = "/sys/class/net/#{name}/operstate"
@@ -44,6 +45,8 @@ Vagrant.configure("2") do |config|
   config.ssh.username = "ubuntu"  
   config.ssh.private_key_path = [ENV.fetch('VAGRANT_CUSTOM_KEY_PATH')] 
   config.ssh.insert_key = false
+
+  DevSetupsSharedFolder.configure_linux(config)
 
   # Prefer an explicit override, then br0, then any other active host bridge.
   # If no bridge exists, fall back to the active uplink interface and let

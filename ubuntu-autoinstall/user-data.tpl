@@ -14,6 +14,7 @@ autoinstall:
     fallback: offline-install   
   packages:
     - spice-vdagent
+    - cifs-utils
   users:
     - name: ubuntu
       sudo: ALL=(ALL) NOPASSWD:ALL
@@ -24,7 +25,6 @@ autoinstall:
   late-commands:
       - echo 'ubuntu ALL=(ALL) NOPASSWD:ALL' > /target/etc/sudoers.d/ubuntu
       - chmod 0440 /target/etc/sudoers.d/ubuntu
-
 
 
 

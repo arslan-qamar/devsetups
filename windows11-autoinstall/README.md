@@ -8,6 +8,14 @@ Host requirements: Packer, Vagrant with `vagrant-libvirt`, QEMU/KVM, OVMF Secure
 
 Each Vagrant project automatically creates writable UEFI variables under its `.vagrant` directory from the host's OVMF Microsoft Secure Boot template. The embedded Vagrantfile grants `libvirt-qemu` access using `setfacl`, so the NVRAM is recreated after a host reinstall. Set `WIN11_NVRAM_PATH` or `WIN11_QEMU_USER` for a different host layout.
 
+The repository's Windows profile maps the host's authenticated
+`vagrant-shared` Samba share to `S:`. Run the `vm_shared_folder` Ansible role on
+the host, register the host user with `smbpasswd`, and provide
+`VAGRANT_SHARED_SMB_USER` and `VAGRANT_SHARED_SMB_PASSWORD` when starting the
+VM. The password is passed as a sensitive provisioner value and is not stored
+in the repository. When the password is absent, Vagrant skips the optional
+`S:` mapping without interrupting other provisioning.
+
 ```bash
 cd windows11-autoinstall
 ./bootstrap.sh

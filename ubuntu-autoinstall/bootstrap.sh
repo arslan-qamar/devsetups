@@ -95,7 +95,7 @@ bootstrap_host_dependencies() {
   require_command ansible-playbook
 
   echo "[+] Installing host dependencies with Ansible..."
-  run_as_vagrant_user ansible-playbook -vvv "$REPO_ROOT/main.yml" -i "localhost," --connection="local" --extra-vars "state=present" -t="deps,virtmanager,kvm,libvirt,qemu,packer,vagrant" -K
+  run_as_vagrant_user ansible-playbook -vvv "$REPO_ROOT/main.yml" -i "localhost," --connection="local" --extra-vars "state=present" -t="deps,virtmanager,kvm,libvirt,qemu,packer,vagrant,vm_shared_folder" -K
 
   echo "[+] Installing vagrant-libvirt plugin for user ${VAGRANT_USER}..."
   run_as_vagrant_user vagrant plugin install vagrant-libvirt
@@ -121,6 +121,16 @@ bootstrap_host_dependencies_needed() {
   if ! has_vagrant_libvirt_plugin; then
     return 0
   fi
+
+  if ! grep -q 'BEGIN DEVSETUPS VM SHARED FOLDER' /etc/samba/smb.conf 2>/dev/null; then
+    return 0
+  fi
+
+  for command_name in smbd; do
+    if ! command -v "$command_name" >/dev/null 2>&1; then
+      return 0
+    fi
+  done
 
   return 1
 }

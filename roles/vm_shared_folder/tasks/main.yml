@@ -1,0 +1,131 @@
+---
+- name: Install shared-folder host packages
+  become: yes
+  apt:
+    name:
+      - samba
+    state: present
+  when: state == "present"
+
+- name: Create the shared host directory
+  become: yes
+  file:
+    path: "{{ vm_shared_folder_path }}"
+    state: directory
+    owner: "{{ vm_shared_folder_owner }}"
+    mode: "2770"
+  when: state == "present"
+
+- name: Check the Samba authentication account
+  become: yes
+  command: "pdbedit -L -u {{ vm_shared_folder_samba_user }}"
+  register: vm_shared_folder_samba_account
+  changed_when: false
+  failed_when: false
+  when: state == "present"
+
+- name: Explain how to enable Samba authentication
+  debug:
+    msg: >-
+      Run 'sudo smbpasswd -a {{ vm_shared_folder_samba_user }}' once and choose
+      the password that Windows/VAGRANT_SHARED_SMB_PASSWORD will use.
+  when:
+    - state == "present"
+    - vm_shared_folder_samba_account.rc != 0
+
+- name: Configure the VM shared folder
+  become: yes
+  blockinfile:
+    path: /etc/samba/smb.conf
+    marker: "# {mark} DEVSETUPS VM SHARED FOLDER"
+    insertafter: EOF
+    block: "{{ lookup('template', 'vagrant-shared.conf.j2') }}"
+  notify: Restart Samba
+  when: state == "present"
+
+- name: Remove the obsolete included share file
+  become: yes
+  file:
+    path: /etc/samba/smb.conf.d/vagrant-shared.conf
+    state: absent
+  when: state == "present"
+
+- name: Enable the Samba service
+  become: yes
+  systemd:
+    name: smbd
+    enabled: yes
+    state: started
+  when: state == "present"
+
+- name: Check UFW status
+  become: yes
+  command: ufw status
+  register: vm_shared_folder_ufw_status
+  changed_when: false
+  failed_when: false
+
+- name: Allow authenticated SMB from private VM networks
+  become: yes
+  command:
+    argv:
+      - ufw
+      - allow
+      - from
+      - "{{ item }}"
+      - to
+      - any
+      - port
+      - "445"
+      - proto
+      - tcp
+      - comment
+      - devsetups-vm-share
+  loop: "{{ vm_shared_folder_firewall_sources }}"
+  register: vm_shared_folder_ufw_allow
+  changed_when: "'Rule added' in vm_shared_folder_ufw_allow.stdout"
+  when:
+    - state == "present"
+    - "'Status: active' in vm_shared_folder_ufw_status.stdout"
+
+- name: Check for the Samba configuration during removal
+  stat:
+    path: /etc/samba/smb.conf
+  register: vm_shared_folder_samba_config
+  when: state == "absent"
+
+- name: Remove the VM shared-folder include
+  become: yes
+  blockinfile:
+    path: /etc/samba/smb.conf
+    marker: "# {mark} DEVSETUPS VM SHARED FOLDER"
+    state: absent
+  notify: Restart Samba
+  when:
+    - state == "absent"
+    - vm_shared_folder_samba_config.stat.exists
+
+- name: Remove managed SMB firewall rules
+  become: yes
+  command:
+    argv:
+      - ufw
+      - delete
+      - allow
+      - from
+      - "{{ item }}"
+      - to
+      - any
+      - port
+      - "445"
+      - proto
+      - tcp
+  loop: "{{ vm_shared_folder_firewall_sources }}"
+  register: vm_shared_folder_ufw_delete
+  changed_when: "'Rule deleted' in vm_shared_folder_ufw_delete.stdout"
+  failed_when: false
+  when:
+    - state == "absent"
+    - "'Status: active' in vm_shared_folder_ufw_status.stdout"
+
+# Deliberately retain vm_shared_folder_path when uninstalling. It contains user data.
