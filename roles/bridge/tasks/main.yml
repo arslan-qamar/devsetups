@@ -2,7 +2,6 @@
   command: nmcli --version
   register: nmcli_check
   changed_when: false
-  failed_when: false
   when: state == 'present'
 
 - name: Wait for NetworkManager to be ready
@@ -12,7 +11,6 @@
   retries: 10
   delay: 3
   changed_when: false
-  failed_when: false
   become: yes
   environment:
     DBUS_SYSTEM_BUS_ADDRESS: "unix:path=/run/dbus/system_bus_socket"
@@ -28,12 +26,97 @@
     - libvirt_configure_host_bridge | default(true)
     - nmcli_check.rc == 0
 
+# On reruns the default route may already belong to a bridge. Resolve its
+# physical port instead of attempting to enslave the bridge to itself.
+- name: Resolve physical uplink when the selected interface is a bridge
+  shell: |
+    set -eu
+    interface={{ libvirt_bridge_uplink | quote }}
+    if [ -d "/sys/class/net/$interface/bridge" ]; then
+      count=0
+      uplink=''
+      for port in /sys/class/net/"$interface"/brif/*; do
+        name=${port##*/}
+        if [ -e "/sys/class/net/$name/device" ]; then
+          uplink=$name
+          count=$((count + 1))
+        fi
+      done
+      if [ "$count" -ne 1 ]; then
+        echo "Cannot resolve a unique physical uplink for $interface; set libvirt_bridge_uplink_interface explicitly." >&2
+        exit 1
+      fi
+      printf '%s\n' "$uplink"
+    else
+      printf '%s\n' "$interface"
+    fi
+  register: libvirt_resolved_uplink
+  changed_when: false
+  when:
+    - state == 'present'
+    - libvirt_configure_host_bridge | default(true)
+    - nmcli_check.rc == 0
+    - libvirt_bridge_uplink | length > 0
+
+- name: Use resolved bridge uplink
+  set_fact:
+    libvirt_bridge_uplink: "{{ libvirt_resolved_uplink.stdout | trim }}"
+  when:
+    - state == 'present'
+    - libvirt_configure_host_bridge | default(true)
+    - nmcli_check.rc == 0
+    - libvirt_bridge_uplink | length > 0
+
+- name: Reject attaching the bridge to itself
+  assert:
+    that:
+      - libvirt_bridge_uplink != (libvirt_bridge_name | default('br0'))
+    fail_msg: "The bridge cannot be its own uplink; set libvirt_bridge_uplink_interface to a physical interface."
+  when:
+    - state == 'present'
+    - libvirt_configure_host_bridge | default(true)
+    - nmcli_check.rc == 0
+
+- name: Check uplink for conflicting direct virtual interfaces
+  command:
+    argv: [ip, -j, -d, link, show]
+  register: libvirt_host_links
+  changed_when: false
+  when:
+    - state == 'present'
+    - libvirt_configure_host_bridge | default(true)
+    - nmcli_check.rc == 0
+    - libvirt_bridge_uplink | length > 0
+
+- name: Reject direct virtual interfaces before changing host networking
+  vars:
+    libvirt_conflicting_links: >-
+      {{ libvirt_host_links.stdout | from_json
+         | selectattr('link', 'defined')
+         | selectattr('link', 'equalto', libvirt_bridge_uplink)
+         | selectattr('linkinfo', 'defined')
+         | selectattr('linkinfo.info_kind', 'defined')
+         | selectattr('linkinfo.info_kind', 'in', ['macvtap', 'macvlan', 'ipvlan'])
+         | map(attribute='ifname') | list }}
+  assert:
+    that:
+      - libvirt_conflicting_links | length == 0
+    fail_msg: >-
+      Cannot bridge {{ libvirt_bridge_uplink }} while direct virtual interfaces
+      {{ libvirt_conflicting_links | join(', ') }} use it. Shut down or migrate
+      the VMs/containers owning these interfaces, then rerun. Pausing a VM does
+      not release its interfaces. No host connections have been changed by this run.
+  when:
+    - state == 'present'
+    - libvirt_configure_host_bridge | default(true)
+    - nmcli_check.rc == 0
+    - libvirt_bridge_uplink | length > 0
+
 - name: Get active NM connection for bridge uplink
   shell: |
     nmcli -t -f NAME,DEVICE connection show --active | awk -F: '$2=="{{ libvirt_bridge_uplink }}" {print $1; exit}'
   register: libvirt_uplink_connection
   changed_when: false
-  failed_when: false
   environment:
     DBUS_SYSTEM_BUS_ADDRESS: "unix:path=/run/dbus/system_bus_socket"
   when:
@@ -89,7 +172,16 @@
     - libvirt_uplink_connection.stdout | length > 0
 
 - name: Attach uplink connection to br0
-  shell: nmcli connection modify "{{ libvirt_uplink_connection.stdout }}" connection.master {{ libvirt_bridge_name | default('br0') }} connection.slave-type bridge
+  command:
+    argv:
+      - nmcli
+      - connection
+      - modify
+      - "{{ libvirt_uplink_connection.stdout }}"
+      - connection.master
+      - "{{ libvirt_bridge_name | default('br0') }}"
+      - connection.slave-type
+      - bridge
   become: yes
   environment:
     DBUS_SYSTEM_BUS_ADDRESS: "unix:path=/run/dbus/system_bus_socket"
@@ -100,12 +192,8 @@
     - libvirt_bridge_uplink | length > 0
     - libvirt_uplink_connection.stdout | length > 0
 
-- name: Bring up br0 and uplink slave
-  shell: |
-    nmcli connection up {{ libvirt_bridge_name | default('br0') }} || true
-    nmcli connection up "{{ libvirt_uplink_connection.stdout }}" || true
+- name: Activate and verify host bridge
   become: yes
-  changed_when: false
   environment:
     DBUS_SYSTEM_BUS_ADDRESS: "unix:path=/run/dbus/system_bus_socket"
   when:
@@ -114,6 +202,39 @@
     - nmcli_check.rc == 0
     - libvirt_bridge_uplink | length > 0
     - libvirt_uplink_connection.stdout | length > 0
+  block:
+    # Activate the port first so DHCP on the bridge has a working uplink.
+    - name: Activate uplink connection
+      command:
+        argv: [nmcli, --wait, '60', connection, up, "{{ libvirt_uplink_connection.stdout }}"]
+
+    - name: Activate bridge connection
+      command:
+        argv: [nmcli, --wait, '60', connection, up, "{{ libvirt_bridge_name | default('br0') }}"]
+
+    - name: Verify uplink is attached to the intended bridge
+      command:
+        argv: [readlink, -f, "/sys/class/net/{{ libvirt_bridge_uplink }}/master"]
+      register: libvirt_uplink_master
+      changed_when: false
+      retries: 10
+      delay: 3
+      until:
+        - libvirt_uplink_master.rc == 0
+        - (libvirt_uplink_master.stdout | basename) == (libvirt_bridge_name | default('br0'))
+
+    - name: Verify bridge has carrier and a global IPv4 address
+      command:
+        argv: [ip, -j, -4, address, show, dev, "{{ libvirt_bridge_name | default('br0') }}", scope, global]
+      register: libvirt_bridge_addresses
+      changed_when: false
+      retries: 20
+      delay: 3
+      until:
+        - libvirt_bridge_addresses.rc == 0
+        - (libvirt_bridge_addresses.stdout | from_json | length) > 0
+        - (libvirt_bridge_addresses.stdout | from_json | first).operstate == 'UP'
+        - ((libvirt_bridge_addresses.stdout | from_json | first).addr_info | length) > 0
 
 - name: Warn when bridge automation was skipped
   debug:
