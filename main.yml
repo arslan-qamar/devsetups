@@ -83,6 +83,9 @@
     - role: doppler
       tags: doppler
 
+    - role: cloudflare
+      tags: cloudflare
+
     - role: microk8s
       tags: microk8s
 

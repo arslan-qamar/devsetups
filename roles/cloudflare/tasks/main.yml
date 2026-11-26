@@ -1,0 +1,24 @@
+---
+
+- name: Ensure the Cloudflare CLI is installed
+  ansible.builtin.command:
+    cmd: npm install --global cf
+  when: state == 'present'
+  become: yes
+
+
+- name: Ensure the Cloudflare CLI is uninstalled
+  ansible.builtin.command:
+    cmd: npm uninstall --global cf
+  when: state == 'absent'
+  become: yes
+
+
+- name: Verify the Cloudflare CLI is available
+  ansible.builtin.command:
+    cmd: cf --version
+  args:
+    chdir: "{{ ansible_env.HOME }}"
+  register: cloudflare_cli_version
+  changed_when: false
+  when: state == 'present'

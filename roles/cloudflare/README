@@ -1,0 +1,8 @@
+## Run the following command to install Cloudflare CLI (cf)
+
+```shell
+ansible-playbook -vvv main.yml -i "localhost" --connection="localhost" --extra-vars "state=present" -t="cloudflare" -K
+```
+
+Requires Node.js (the `nodejs` role) because `cf` is installed with `npm install --global cf`.
+The package provides both `cf` and `cloudflare` commands. Sign in afterwards with `cf auth login`.
