@@ -21,11 +21,9 @@ vagrant up
 ```
 
 ### Automated Tooling Setup
-On VM startup, the following command is executed to configure the environment:
+The main VM and both replicas use the same IBKR profile. Vagrant uploads the local `main.yml` and `roles/` and installs the selected tools in one Ansible run. To apply local role changes to an existing VM, run `vagrant provision` from its directory.
 
-```bash
-wget --header="Cache-Control: no-cache" -qO- "https://raw.githubusercontent.com/arslan-qamar/devsetups/refs/heads/main/bootstrap.sh?ts=$(date +%s)" | bash -s "main.yml" "localhost," "local" "install" "deps,devbox,docker,githubcli,vscode,zsh"
-```
+Load a GitHub-authorized key into the host SSH agent before provisioning. The guest uses the forwarded agent to clone `interactivebrokers2`. Git signing uses `GIT_NAME`, `GIT_EMAIL`, and `DOPPLER_SERVICE_TOKEN_GIT`. The project's `setup.sh` receives the IBKR paper, live, test, and service-account Doppler tokens configured by the profile.
 
 ## How It Works
 1. **Provisioning**: Vagrant creates a virtual machine based on the provided configuration.

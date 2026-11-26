@@ -31,7 +31,7 @@ module ProjectVM
           'GIT_EMAIL' => ENV['GIT_EMAIL'],
           'DOPPLER_SERVICE_TOKEN_GIT' => ENV['DOPPLER_SERVICE_TOKEN_GIT']
         },
-        path: File.join(__dir__, 'provision_05_setup_git_gpg_signing.sh')
+        path: File.join(__dir__, 'setup_git_gpg_signing.sh')
       config.vm.provision 'shell', name: 'validate_setup', privileged: false,
         args: ['--forwarded-agent'], path: File.join(__dir__, 'provision_validate_setup.sh')
     end
