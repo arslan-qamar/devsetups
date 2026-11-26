@@ -25,6 +25,16 @@ The main VM and both replicas use the same IBKR profile. Vagrant uploads the loc
 
 Load a GitHub-authorized key into the host SSH agent before provisioning. The guest uses the forwarded agent to clone `interactivebrokers2`. Git signing uses `GIT_NAME`, `GIT_EMAIL`, and `DOPPLER_SERVICE_TOKEN_GIT`. The project's `setup.sh` receives the IBKR paper, live, test, and service-account Doppler tokens configured by the profile.
 
+### Rerun IBKR project steps
+
+From the running VM’s directory (`ibkr`, `ibkr/replica`, or `ibkr/replica2`), rerun the checked-out project’s `setup.sh` and its validation together:
+
+```bash
+vagrant provision --provision-with setup_project,validate_ibkr_setup
+```
+
+To check the repository, `.envrc`, and TWS files independently, select `validate_ibkr_setup` alone. The two guest reboots are also individually selectable as `restart_before_project_setup` and `restart_after_project_setup`. For tool installation, checkout, and signing, see the [shared provisioning steps](../../README.md#run-individual-vm-provisioning-steps).
+
 ## How It Works
 1. **Provisioning**: Vagrant creates a virtual machine based on the provided configuration.
 2. **Configuration**: Ansible applies configurations and installs required tools for the trading bot.

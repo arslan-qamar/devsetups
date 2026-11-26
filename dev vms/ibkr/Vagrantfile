@@ -11,9 +11,9 @@ Vagrant.configure('2') do |config|
     tools: ProjectVM::DEFAULT_TOOLS + %w[mongodb_compass],
     git_signing: true)
 
-  config.vm.provision 'shell', name: 'restart_before_project_setup', reboot: true
+  config.vm.provision 'restart_before_project_setup', type: 'shell', reboot: true
 
-  config.vm.provision "shell", name: "07_setup_project", privileged: false,
+  config.vm.provision 'setup_project', type: 'shell', privileged: false,
     env: {
       "PROJECT_SETUP_SCRIPT" => "setup.sh",
       "REPOSITORY_NAME" => repository,
@@ -25,7 +25,7 @@ Vagrant.configure('2') do |config|
     path: File.expand_path("../setup_project.sh", __dir__)
 
   # IBKR Validation step
-  config.vm.provision "shell", name: "IBKR Setup Validation", privileged: false,
+  config.vm.provision 'validate_ibkr_setup', type: 'shell', privileged: false,
     inline: <<-SHELL
       set -e
       echo "Validating IBKR setup..."
@@ -43,7 +43,7 @@ Vagrant.configure('2') do |config|
       echo "All IBKR validation checks passed."
     SHELL
 
-  config.vm.provision 'shell', name: 'restart_after_project_setup', reboot: true
+  config.vm.provision 'restart_after_project_setup', type: 'shell', reboot: true
 
   config.vm.provider 'libvirt' do |libvirt|
     libvirt.memory = 14576

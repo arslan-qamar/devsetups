@@ -16,6 +16,22 @@ To set up the basic tooling environment, run the following command:
 wget --header="Cache-Control: no-cache" -qO- "https://raw.githubusercontent.com/arslan-qamar/devsetups/refs/heads/main/bootstrap.sh?ts=$(date +%s)" | bash -s "main.yml" "localhost," "local" "install" "deps,devbox,docker,githubcli,vscode"
 ```
 
+## Run individual VM provisioning steps
+
+For Ubuntu project profiles, run these commands from the directory of the running VM (for example, `dev vms/portfoliozen`). To rerun the profile’s selected Ansible roles using the playbook and roles already uploaded to the guest, use:
+
+```bash
+vagrant provision --provision-with install_tools
+```
+
+After editing `main.yml` or a role on the host, upload the current files and apply them in one invocation:
+
+```bash
+vagrant provision --provision-with prepare_provisioning_dir,upload_playbook,upload_roles,install_tools
+```
+
+Profiles with a project repository also provide `checkout_project`, which checks access to the remote and clones a missing checkout using the forwarded host SSH agent. Profiles with Git signing provide `setup_git_signing` and `validate_setup`. Pass any of these names to `--provision-with` to run that step individually. For project setup and validation on IBKR and its replicas, see the [IBKR README](dev%20vms/ibkr/README.md#rerun-ibkr-project-steps).
+
 ## Running Ansible Playbook Against a VM
 To run the Ansible playbook directly against a VM (for example, to configure MicroK8s on a remote host), use:
 

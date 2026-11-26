@@ -7,9 +7,9 @@ module ProjectVM
     config.ssh.forward_agent = true
 
     # Refresh the staged playbook on every provision, including edits to local roles.
-    config.vm.provision 'shell', privileged: false, inline: "mkdir -p #{guest_dir}/roles"
-    config.vm.provision 'file', source: File.join(root, 'main.yml'), destination: "#{guest_dir}/main.yml"
-    config.vm.provision 'file', source: File.join(root, 'roles', '.'), destination: "#{guest_dir}/roles"
+    config.vm.provision 'prepare_provisioning_dir', type: 'shell', privileged: false, inline: "mkdir -p #{guest_dir}/roles"
+    config.vm.provision 'upload_playbook', type: 'file', source: File.join(root, 'main.yml'), destination: "#{guest_dir}/main.yml"
+    config.vm.provision 'upload_roles', type: 'file', source: File.join(root, 'roles', '.'), destination: "#{guest_dir}/roles"
 
     config.vm.provision 'install_tools', type: 'ansible_local' do |ansible|
       ansible.provisioning_path = guest_dir
@@ -19,20 +19,20 @@ module ProjectVM
     end
 
     if repository
-      config.vm.provision 'shell', name: 'checkout_project', privileged: false,
+      config.vm.provision 'checkout_project', type: 'shell', privileged: false,
         env: { 'REPOSITORY_NAME' => repository },
         path: File.join(__dir__, 'checkout_project.sh')
     end
 
     if git_signing
-      config.vm.provision 'shell', name: 'setup_git_signing', privileged: false,
+      config.vm.provision 'setup_git_signing', type: 'shell', privileged: false,
         env: {
           'GIT_NAME' => ENV['GIT_NAME'],
           'GIT_EMAIL' => ENV['GIT_EMAIL'],
           'DOPPLER_SERVICE_TOKEN_GIT' => ENV['DOPPLER_SERVICE_TOKEN_GIT']
         },
         path: File.join(__dir__, 'setup_git_gpg_signing.sh')
-      config.vm.provision 'shell', name: 'validate_setup', privileged: false,
+      config.vm.provision 'validate_setup', type: 'shell', privileged: false,
         args: ['--forwarded-agent'], path: File.join(__dir__, 'provision_validate_setup.sh')
     end
   end
