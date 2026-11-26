@@ -8,6 +8,9 @@
     - role: nodejs
       tags: nodejs
 
+    - role: neon
+      tags: neon
+
     - role: go
       tags: go
 
@@ -67,6 +70,9 @@
 
     - role: hcp
       tags: hcp
+
+    - role: ocicli
+      tags: ocicli
 
     - role: rider
       tags: rider

@@ -1,0 +1,23 @@
+---
+- name: Check whether the Neon CLI is installed globally
+  become: true
+  command:
+    cmd: npm list --global --depth=0 neon
+  register: neon_cli_package
+  changed_when: false
+  failed_when: false
+  when: state == 'present'
+
+- name: Install Neon CLI globally
+  become: true
+  command:
+    cmd: npm install --global neon
+  when:
+    - state == 'present'
+    - neon_cli_package.rc != 0
+
+- name: Remove Neon CLI globally
+  become: true
+  command:
+    cmd: npm uninstall --global neon
+  when: state == 'absent'

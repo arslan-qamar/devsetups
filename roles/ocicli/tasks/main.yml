@@ -1,0 +1,57 @@
+---
+- name: Install OCI CLI prerequisites
+  become: true
+  apt:
+    name:
+      - curl
+      - python3
+    state: present
+    update_cache: yes
+  when: state == 'present'
+
+- name: Download OCI CLI installer
+  become: true
+  get_url:
+    url: https://raw.githubusercontent.com/oracle/oci-cli/master/scripts/install/install.sh
+    dest: /tmp/oci-cli-install.sh
+    mode: '0755'
+  when: state == 'present'
+
+- name: Install OCI CLI non-interactively
+  become: true
+  command:
+    cmd: >-
+      bash /tmp/oci-cli-install.sh --accept-all-defaults --no-tty
+      --install-dir /opt/oracle/oci-cli
+      --exec-dir /usr/local/bin
+      --script-dir /usr/local/lib/oci-cli/scripts
+  args:
+    creates: /usr/local/bin/oci
+  when: state == 'present'
+
+- name: Remove OCI CLI executable
+  become: true
+  file:
+    path: /usr/local/bin/oci
+    state: absent
+  when: state == 'absent'
+
+- name: Remove OCI CLI installation
+  become: true
+  file:
+    path: /opt/oracle/oci-cli
+    state: absent
+  when: state == 'absent'
+
+- name: Remove OCI CLI helper scripts
+  become: true
+  file:
+    path: /usr/local/lib/oci-cli
+    state: absent
+  when: state == 'absent'
+
+- name: Remove OCI CLI installer
+  become: true
+  file:
+    path: /tmp/oci-cli-install.sh
+    state: absent
