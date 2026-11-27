@@ -1,0 +1,6 @@
+---
+- name: Install age and age-keygen
+  become: true
+  ansible.builtin.apt:
+    name: age
+    state: "{{ state }}"

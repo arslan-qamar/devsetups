@@ -7,7 +7,7 @@ require_relative '../project_vm'
 Vagrant.configure('2') do |config|
   ProjectVM.provision(config,
     repository: 'gaspeep',
-    tools: %w[deps doppler helm argocd kubectl python docker githubcli zsh postgres postman cloudflare neon ocicli vscode dotnet microk8s go nodejs],
+    tools: %w[deps age doppler helm argocd kubectl python docker githubcli zsh postgres postman cloudflare neon ocicli vscode dotnet microk8s go nodejs],
     git_signing: true)
 
   config.vm.provider 'libvirt' do |libvirt|
