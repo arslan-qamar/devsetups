@@ -8,6 +8,9 @@
     - role: age
       tags: age
 
+    - role: mailtrap
+      tags: mailtrap
+
     - role: nodejs
       tags: nodejs
 

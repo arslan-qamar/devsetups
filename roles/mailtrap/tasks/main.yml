@@ -1,0 +1,84 @@
+---
+- name: Install Homebrew prerequisites
+  become: true
+  ansible.builtin.apt:
+    name:
+      - build-essential
+      - curl
+      - file
+      - git
+      - procps
+    state: present
+  when: state == 'present'
+
+- name: Install Homebrew
+  ansible.builtin.shell: |
+    set -o pipefail
+    curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh | NONINTERACTIVE=1 /bin/bash
+  args:
+    executable: /bin/bash
+    creates: /home/linuxbrew/.linuxbrew/bin/brew
+  when: state == 'present'
+
+- name: Check whether Homebrew is installed
+  ansible.builtin.stat:
+    path: /home/linuxbrew/.linuxbrew/bin/brew
+  register: mailtrap_homebrew
+
+- name: Check whether Mailtrap CLI is installed
+  ansible.builtin.command:
+    argv:
+      - /home/linuxbrew/.linuxbrew/bin/brew
+      - list
+      - --versions
+      - mailtrap/cli/mailtrap
+  register: mailtrap_installed
+  changed_when: false
+  failed_when: false
+  when: mailtrap_homebrew.stat.exists
+
+- name: Install Mailtrap CLI
+  ansible.builtin.command:
+    argv:
+      - /home/linuxbrew/.linuxbrew/bin/brew
+      - install
+      - mailtrap/cli/mailtrap
+  when:
+    - state == 'present'
+    - mailtrap_installed.stdout | length == 0
+
+- name: Make Mailtrap CLI available on the system path
+  become: true
+  ansible.builtin.file:
+    src: /home/linuxbrew/.linuxbrew/bin/mailtrap
+    dest: /usr/local/bin/mailtrap
+    state: link
+  when: state == 'present'
+
+- name: Check Mailtrap CLI system path link
+  ansible.builtin.stat:
+    path: /usr/local/bin/mailtrap
+    follow: false
+  register: mailtrap_system_link
+  when: state == 'absent'
+
+- name: Remove Mailtrap CLI system path link
+  become: true
+  ansible.builtin.file:
+    path: /usr/local/bin/mailtrap
+    state: absent
+  when:
+    - state == 'absent'
+    - mailtrap_system_link.stat.islnk | default(false)
+    - mailtrap_system_link.stat.lnk_source | default('') == '/home/linuxbrew/.linuxbrew/bin/mailtrap'
+
+- name: Remove Mailtrap CLI
+  ansible.builtin.command:
+    argv:
+      - /home/linuxbrew/.linuxbrew/bin/brew
+      - uninstall
+      - mailtrap/cli/mailtrap
+  when:
+    - state == 'absent'
+    - mailtrap_homebrew.stat.exists
+    - mailtrap_installed.stdout | length > 0
